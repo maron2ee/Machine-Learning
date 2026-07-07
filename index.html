@@ -639,10 +639,58 @@ const VOCAB_CATEGORIES = {
     {kana:'こわい',korean:'무서워',romaji:'kowai'},
     {kana:'げんき',korean:'잘 지내 / 건강해',romaji:'genki'},
   ],
+  '전화': [
+    {kana:'もしもし',korean:'여보세요',romaji:'moshi moshi'},
+    {kana:'でんわ',korean:'전화',romaji:'denwa'},
+    {kana:'でんわして',korean:'전화해줘',romaji:'denwa shite'},
+    {kana:'いまだいじょうぶ？',korean:'지금 괜찮아?',romaji:'ima daijoubu?'},
+    {kana:'きこえる？',korean:'들려?',romaji:'kikoeru?'},
+    {kana:'ちょっとまって',korean:'잠깐만',romaji:'chotto matte'},
+    {kana:'こえがききたい',korean:'목소리 듣고 싶어',romaji:'koe ga kikitai'},
+    {kana:'あとでかけなおす',korean:'나중에 다시 걸게',romaji:'ato de kakenaosu'},
+    {kana:'きってもいい？',korean:'끊어도 돼?',romaji:'kitte mo ii?'},
+    {kana:'おやすみのでんわ',korean:'잘 자 전화',romaji:'oyasumi no denwa'},
+  ],
+  '날씨': [
+    {kana:'てんき',korean:'날씨',romaji:'tenki'},
+    {kana:'はれ',korean:'맑음',romaji:'hare'},
+    {kana:'あめ',korean:'비',romaji:'ame'},
+    {kana:'くもり',korean:'흐림',romaji:'kumori'},
+    {kana:'ゆき',korean:'눈',romaji:'yuki'},
+    {kana:'かぜ',korean:'바람',romaji:'kaze'},
+    {kana:'あつい',korean:'더워',romaji:'atsui'},
+    {kana:'さむい',korean:'추워',romaji:'samui'},
+    {kana:'かさ',korean:'우산',romaji:'kasa'},
+    {kana:'いいてんきだね',korean:'날씨 좋다',romaji:'ii tenki da ne'},
+  ],
+  '쇼핑': [
+    {kana:'これください',korean:'이거 주세요',romaji:'kore kudasai'},
+    {kana:'みせてください',korean:'보여주세요',romaji:'misete kudasai'},
+    {kana:'しちゃく',korean:'입어볼게요',romaji:'shichaku'},
+    {kana:'たかい',korean:'비싸',romaji:'takai'},
+    {kana:'やすい',korean:'싸',romaji:'yasui'},
+    {kana:'セール',korean:'세일',romaji:'seeru'},
+    {kana:'カード',korean:'카드',romaji:'kaado'},
+    {kana:'レジ',korean:'계산대',romaji:'reji'},
+    {kana:'ふくろください',korean:'봉투 주세요',romaji:'fukuro kudasai'},
+    {kana:'これにする',korean:'이걸로 할게',romaji:'kore ni suru'},
+  ],
+  '가족': [
+    {kana:'かぞく',korean:'가족',romaji:'kazoku'},
+    {kana:'おとうさん',korean:'아버지',romaji:'otousan'},
+    {kana:'おかあさん',korean:'어머니',romaji:'okaasan'},
+    {kana:'おにいさん',korean:'형 / 오빠',romaji:'oniisan'},
+    {kana:'おねえさん',korean:'누나 / 언니',romaji:'oneesan'},
+    {kana:'おとうと',korean:'남동생',romaji:'otouto'},
+    {kana:'いもうと',korean:'여동생',romaji:'imouto'},
+    {kana:'おじいさん',korean:'할아버지',romaji:'ojiisan'},
+    {kana:'おばあさん',korean:'할머니',romaji:'obaasan'},
+    {kana:'あかちゃん',korean:'아기',romaji:'akachan'},
+  ],
 };
 
 const ALL_VOCAB = Object.values(VOCAB_CATEGORIES).flat();
-const CAT_ICONS = { '일상':'🌸', '사랑':'♡', '음식':'🍣', '여행':'✈', '숫자':'①', '감정':'☺' };
+const CAT_ICONS = { '일상':'🌸', '사랑':'♡', '음식':'🍣', '여행':'✈', '숫자':'①', '감정':'☺', '전화':'📞', '날씨':'☀', '쇼핑':'🛍', '가족':'家' };
 
 function getTodayWord() {
   return ALL_VOCAB[Math.floor(Date.now() / 86400000) % ALL_VOCAB.length];
