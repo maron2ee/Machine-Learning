@@ -544,51 +544,105 @@ const HIRAGANA = [
   {char:'わ',rom:'wa'},{char:'',rom:''},{char:'を',rom:'wo'},{char:'',rom:''},{char:'ん',rom:'n'},
 ];
 
+const KATAKANA = [
+  {char:'ア',rom:'a'},{char:'イ',rom:'i'},{char:'ウ',rom:'u'},{char:'エ',rom:'e'},{char:'オ',rom:'o'},
+  {char:'カ',rom:'ka'},{char:'キ',rom:'ki'},{char:'ク',rom:'ku'},{char:'ケ',rom:'ke'},{char:'コ',rom:'ko'},
+  {char:'サ',rom:'sa'},{char:'シ',rom:'shi'},{char:'ス',rom:'su'},{char:'セ',rom:'se'},{char:'ソ',rom:'so'},
+  {char:'タ',rom:'ta'},{char:'チ',rom:'chi'},{char:'ツ',rom:'tsu'},{char:'テ',rom:'te'},{char:'ト',rom:'to'},
+  {char:'ナ',rom:'na'},{char:'ニ',rom:'ni'},{char:'ヌ',rom:'nu'},{char:'ネ',rom:'ne'},{char:'ノ',rom:'no'},
+  {char:'ハ',rom:'ha'},{char:'ヒ',rom:'hi'},{char:'フ',rom:'fu'},{char:'ヘ',rom:'he'},{char:'ホ',rom:'ho'},
+  {char:'マ',rom:'ma'},{char:'ミ',rom:'mi'},{char:'ム',rom:'mu'},{char:'メ',rom:'me'},{char:'モ',rom:'mo'},
+  {char:'ヤ',rom:'ya'},{char:'',rom:''},{char:'ユ',rom:'yu'},{char:'',rom:''},{char:'ヨ',rom:'yo'},
+  {char:'ラ',rom:'ra'},{char:'リ',rom:'ri'},{char:'ル',rom:'ru'},{char:'レ',rom:'re'},{char:'ロ',rom:'ro'},
+  {char:'ワ',rom:'wa'},{char:'',rom:''},{char:'ヲ',rom:'wo'},{char:'',rom:''},{char:'ン',rom:'n'},
+];
+
+const KANA_SETS = {
+  hiragana: { label:'히라가나', glyph:'あ', data:HIRAGANA, key:'hiragana' },
+  katakana: { label:'가타카나', glyph:'ア', data:KATAKANA, key:'katakana' },
+};
+
 const VOCAB_CATEGORIES = {
   '일상': [
     {kana:'おはよう',korean:'안녕 (아침)',romaji:'ohayou'},
     {kana:'こんにちは',korean:'안녕하세요',romaji:'konnichiwa'},
     {kana:'こんばんは',korean:'안녕하세요 (저녁)',romaji:'konbanwa'},
+    {kana:'おやすみ',korean:'잘 자',romaji:'oyasumi'},
     {kana:'ありがとう',korean:'고마워',romaji:'arigatou'},
+    {kana:'ごめんね',korean:'미안해',romaji:'gomen ne'},
     {kana:'すみません',korean:'저기요 / 죄송해요',romaji:'sumimasen'},
+    {kana:'だいじょうぶ',korean:'괜찮아',romaji:'daijoubu'},
     {kana:'はい',korean:'네',romaji:'hai'},
     {kana:'いいえ',korean:'아니오',romaji:'iie'},
     {kana:'わかりました',korean:'알겠어요',romaji:'wakarimashita'},
+    {kana:'またあした',korean:'내일 또 봐',romaji:'mata ashita'},
   ],
   '사랑': [
     {kana:'すき',korean:'좋아해',romaji:'suki'},
+    {kana:'だいすき',korean:'많이 좋아해',romaji:'daisuki'},
     {kana:'あいしてる',korean:'사랑해',romaji:'aishiteru'},
+    {kana:'あいたい',korean:'보고 싶어',romaji:'aitai'},
     {kana:'かわいい',korean:'귀여워',romaji:'kawaii'},
     {kana:'いっしょにいよう',korean:'같이 있자',romaji:'issho ni iyou'},
     {kana:'てをつなごう',korean:'손 잡자',romaji:'te wo tsunagou'},
-    {kana:'たのしい',korean:'즐거워',romaji:'tanoshii'},
+    {kana:'ぎゅっとして',korean:'꼭 안아줘',romaji:'gyutto shite'},
     {kana:'しあわせ',korean:'행복해',romaji:'shiawase'},
+    {kana:'けっこんしよう',korean:'결혼하자',romaji:'kekkon shiyou'},
     {kana:'ずっといっしょ',korean:'항상 같이',romaji:'zutto issho'},
   ],
   '음식': [
     {kana:'おいしい',korean:'맛있어',romaji:'oishii'},
+    {kana:'おなかすいた',korean:'배고파',romaji:'onaka suita'},
     {kana:'ラーメン',korean:'라멘',romaji:'raamen'},
     {kana:'すし',korean:'초밥',romaji:'sushi'},
     {kana:'てんぷら',korean:'튀김',romaji:'tenpura'},
     {kana:'やきとり',korean:'야키토리',romaji:'yakitori'},
+    {kana:'ビール',korean:'맥주',romaji:'biiru'},
     {kana:'おちゃ',korean:'녹차',romaji:'ocha'},
+    {kana:'あまい',korean:'달아',romaji:'amai'},
+    {kana:'からい',korean:'매워',romaji:'karai'},
     {kana:'たべよう',korean:'먹자',romaji:'tabeyou'},
-    {kana:'のもう',korean:'마시자',romaji:'nomou'},
+    {kana:'かんぱい',korean:'건배',romaji:'kanpai'},
   ],
   '여행': [
     {kana:'どこ',korean:'어디',romaji:'doko'},
     {kana:'えき',korean:'역',romaji:'eki'},
     {kana:'ホテル',korean:'호텔',romaji:'hoteru'},
     {kana:'かいもの',korean:'쇼핑',romaji:'kaimono'},
-    {kana:'しゃしん',korean:'사진',romaji:'shashin'},
+    {kana:'いくらですか',korean:'얼마예요?',romaji:'ikura desu ka'},
+    {kana:'しゃしんとって',korean:'사진 찍어줘',romaji:'shashin totte'},
     {kana:'たのしかった',korean:'즐거웠어',romaji:'tanoshikatta'},
     {kana:'きれい',korean:'예뻐 / 아름다워',romaji:'kirei'},
+    {kana:'たすけて',korean:'도와줘',romaji:'tasukete'},
     {kana:'またきたい',korean:'또 오고 싶어',romaji:'mata kitai'},
+  ],
+  '숫자': [
+    {kana:'いち',korean:'1',romaji:'ichi'},
+    {kana:'に',korean:'2',romaji:'ni'},
+    {kana:'さん',korean:'3',romaji:'san'},
+    {kana:'よん',korean:'4',romaji:'yon'},
+    {kana:'ご',korean:'5',romaji:'go'},
+    {kana:'ろく',korean:'6',romaji:'roku'},
+    {kana:'なな',korean:'7',romaji:'nana'},
+    {kana:'はち',korean:'8',romaji:'hachi'},
+    {kana:'きゅう',korean:'9',romaji:'kyuu'},
+    {kana:'じゅう',korean:'10',romaji:'juu'},
+  ],
+  '감정': [
+    {kana:'うれしい',korean:'기뻐',romaji:'ureshii'},
+    {kana:'たのしい',korean:'즐거워',romaji:'tanoshii'},
+    {kana:'かなしい',korean:'슬퍼',romaji:'kanashii'},
+    {kana:'さびしい',korean:'외로워',romaji:'sabishii'},
+    {kana:'つかれた',korean:'피곤해',romaji:'tsukareta'},
+    {kana:'ねむい',korean:'졸려',romaji:'nemui'},
+    {kana:'びっくり',korean:'깜짝이야',romaji:'bikkuri'},
+    {kana:'こわい',korean:'무서워',romaji:'kowai'},
+    {kana:'げんき',korean:'잘 지내 / 건강해',romaji:'genki'},
   ],
 };
 
 const ALL_VOCAB = Object.values(VOCAB_CATEGORIES).flat();
-const CAT_ICONS = { '일상':'🌸', '사랑':'♡', '음식':'🍣', '여행':'✈' };
+const CAT_ICONS = { '일상':'🌸', '사랑':'♡', '음식':'🍣', '여행':'✈', '숫자':'①', '감정':'☺' };
 
 function getTodayWord() {
   return ALL_VOCAB[Math.floor(Date.now() / 86400000) % ALL_VOCAB.length];
@@ -996,26 +1050,36 @@ function QuizTab({ state, setState, showToast }) {
 }
 
 /* ── Hiragana Tab ──────────────────────────────────────────────────────── */
-function HiraganaTab({ state, setState, showToast }) {
-  const learned = new Set(state.hiragana||[]);
-  const total = HIRAGANA.filter(h=>h.char).length;
+function KanaTab({ state, setState, showToast }) {
+  const [kind, setKind] = useState('hiragana');
+  const set = KANA_SETS[kind];
+  const stateKey = set.key;
+
+  const learned = new Set(state[stateKey]||[]);
+  const total = set.data.filter(h=>h.char).length;
   const pct = Math.round(learned.size / total * 100);
 
   const toggle = (char) => {
     if (!char) return;
-    const s = new Set(state.hiragana||[]);
+    const s = new Set(state[stateKey]||[]);
     if (s.has(char)) s.delete(char);
     else { s.add(char); showToast(`${char} ✓`); }
-    setState({...state, hiragana:[...s]});
+    setState({...state, [stateKey]:[...s]});
   };
 
   return (
     <div className="content">
-      <div className="section-title">히라가나</div>
+      <div className="toggle-wrap">
+        {Object.entries(KANA_SETS).map(([id, s]) => (
+          <button key={id} className={`toggle-btn${kind===id?' active':''}`} onClick={() => setKind(id)}>
+            <span style={{fontFamily:'Georgia,serif',marginRight:5}}>{s.glyph}</span>{s.label}
+          </button>
+        ))}
+      </div>
 
       <div className="card" style={{marginBottom:12}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
-          <span style={{fontSize:14,fontWeight:600}}>학습 진도</span>
+          <span style={{fontSize:14,fontWeight:600}}>{set.label} 진도</span>
           <span style={{fontFamily:'Georgia,serif',fontSize:22,color:'var(--rose)'}}>{pct}%</span>
         </div>
         <div className="prog-track">
@@ -1031,7 +1095,7 @@ function HiraganaTab({ state, setState, showToast }) {
           글자를 탭하면 완료로 표시됩니다. 파트너와 번갈아 읽는 연습을 해보세요.
         </div>
         <div className="hira-grid">
-          {HIRAGANA.map((h, i) => (
+          {set.data.map((h, i) => (
             h.char ? (
               <div key={i} className={`hira-cell${learned.has(h.char)?' learned':''}`} onClick={() => toggle(h.char)}>
                 <span className="hira-char">{h.char}</span>
@@ -1045,7 +1109,9 @@ function HiraganaTab({ state, setState, showToast }) {
       <div className="tip-card" style={{marginTop:12}}>
         <div className="tip-label">학습 팁</div>
         <div className="tip-text">
-          하루 한 행(5글자)씩 외워보세요. 파트너에게 읽어달라고 하고 받아쓰기 연습을 하면 효과적이에요.
+          {kind==='hiragana'
+            ? '히라가나는 일본어의 기본 문자예요. 하루 한 행(5글자)씩 외워보세요.'
+            : '가타카나는 외래어·이름 표기에 쓰여요. コーヒー(커피)처럼 익숙한 단어부터 시작해보세요.'}
         </div>
       </div>
     </div>
@@ -1072,22 +1138,22 @@ function App() {
 
   if (!appState?.p1) return (
     <SetupScreen onComplete={(p1, p2) => {
-      updateState({ p1, p2, streak:1, learned:[], p1Learned:[], p2Learned:[], quizWins:0, hiragana:[] });
+      updateState({ p1, p2, streak:1, learned:[], p1Learned:[], p2Learned:[], quizWins:0, hiragana:[], katakana:[] });
     }} />
   );
 
   const tabs = [
-    { id:'home',     icon:'🏠', label:'홈' },
-    { id:'vocab',    icon:'📖', label:'어휘' },
-    { id:'quiz',     icon:'⚔️',  label:'퀴즈' },
-    { id:'hiragana', icon:'あ',  label:'히라가나' },
+    { id:'home',  icon:'🏠', label:'홈' },
+    { id:'vocab', icon:'📖', label:'어휘' },
+    { id:'quiz',  icon:'⚔️',  label:'퀴즈' },
+    { id:'kana',  icon:'あ',  label:'문자' },
   ];
 
   const HEADER_TITLES = {
-    home:     { main:'우리 둘이', accent:'일본어' },
-    vocab:    { main:'어휘', accent:'학습' },
-    quiz:     { main:'퀴즈', accent:'배틀' },
-    hiragana: { main:'히라가나', accent:'あ' },
+    home:  { main:'우리 둘이', accent:'일본어' },
+    vocab: { main:'어휘', accent:'학습' },
+    quiz:  { main:'퀴즈', accent:'배틀' },
+    kana:  { main:'가나', accent:'あ ア' },
   };
   const ht = HEADER_TITLES[tab];
 
@@ -1111,7 +1177,7 @@ function App() {
       {tab==='home'     && <HomeTab     state={appState} setState={updateState} />}
       {tab==='vocab'    && <VocabTab    state={appState} setState={updateState} />}
       {tab==='quiz'     && <QuizTab     state={appState} setState={updateState} showToast={showToast} />}
-      {tab==='hiragana' && <HiraganaTab state={appState} setState={updateState} showToast={showToast} />}
+      {tab==='kana'     && <KanaTab     state={appState} setState={updateState} showToast={showToast} />}
 
       <nav className="nav">
         {tabs.map(t => (
