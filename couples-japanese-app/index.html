@@ -7,271 +7,521 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="우리 둘이 일본어" />
-  <meta name="theme-color" content="#ff6987" />
+  <meta name="theme-color" content="#bf3a57" />
   <meta name="description" content="부부가 함께 일본어를 배우는 커플 학습 앱" />
   <link rel="manifest" href="manifest.json" />
-  <title>우리 둘이 일본어 - 커플 일본어 학습</title>
+  <title>우리 둘이 일본어</title>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ── Tokens ─────────────────────────────────────────────────────────── */
+    :root {
+      --bg:        #f5f0eb;
+      --surface:   #ffffff;
+      --surface-2: #faf7f3;
+      --rose:      #bf3a57;
+      --rose-lt:   #fceaee;
+      --rose-dk:   #8c1f36;
+      --plum:      #3a2850;
+      --plum-lt:   #ede8f5;
+      --ink:       #1a1118;
+      --ink-2:     #6b5a70;
+      --ink-3:     #aaa0b0;
+      --border:    #e6dce4;
+      --shadow:    rgba(50,15,40,0.07);
+      --ok:        #2e7d4f;
+      --ok-lt:     #e8f5ed;
+      --err:       #c0392b;
+      --err-lt:    #fde8e6;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:        #150f18;
+        --surface:   #201720;
+        --surface-2: #281e2c;
+        --rose:      #e05a75;
+        --rose-lt:   #3a1a26;
+        --rose-dk:   #f07090;
+        --plum:      #9570c0;
+        --plum-lt:   #261e36;
+        --ink:       #f0eaf5;
+        --ink-2:     #b8a8c2;
+        --ink-3:     #6e5e7a;
+        --border:    #352538;
+        --shadow:    rgba(0,0,0,0.3);
+        --ok:        #4caf73;
+        --ok-lt:     #1a3a27;
+        --err:       #e05545;
+        --err-lt:    #3a1a18;
+      }
+    }
+    :root[data-theme="light"] {
+      --bg:#f5f0eb; --surface:#ffffff; --surface-2:#faf7f3;
+      --rose:#bf3a57; --rose-lt:#fceaee; --rose-dk:#8c1f36;
+      --plum:#3a2850; --plum-lt:#ede8f5;
+      --ink:#1a1118; --ink-2:#6b5a70; --ink-3:#aaa0b0;
+      --border:#e6dce4; --shadow:rgba(50,15,40,0.07);
+      --ok:#2e7d4f; --ok-lt:#e8f5ed; --err:#c0392b; --err-lt:#fde8e6;
+    }
+    :root[data-theme="dark"] {
+      --bg:#150f18; --surface:#201720; --surface-2:#281e2c;
+      --rose:#e05a75; --rose-lt:#3a1a26; --rose-dk:#f07090;
+      --plum:#9570c0; --plum-lt:#261e36;
+      --ink:#f0eaf5; --ink-2:#b8a8c2; --ink-3:#6e5e7a;
+      --border:#352538; --shadow:rgba(0,0,0,0.3);
+      --ok:#4caf73; --ok-lt:#1a3a27; --err:#e05545; --err-lt:#3a1a18;
+    }
+
+    /* ── Reset & Base ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #fff0f3 0%, #fff9f0 50%, #f0f4ff 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
       min-height: 100vh;
       min-height: -webkit-fill-available;
-      color: #333;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
       overscroll-behavior: none;
+      transition: background 0.2s, color 0.2s;
     }
-    .app { max-width: 480px; margin: 0 auto; min-height: 100vh; min-height: -webkit-fill-available; position: relative; }
+    button, input { font-family: inherit; }
+    button { cursor: pointer; border: none; background: none; }
 
-    /* Navigation */
+    /* ── Layout shell ───────────────────────────────────────────────────── */
+    .app {
+      max-width: 480px; margin: 0 auto;
+      min-height: 100vh; min-height: -webkit-fill-available;
+      position: relative; display: flex; flex-direction: column;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────────────── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: calc(14px + env(safe-area-inset-top)) 20px 13px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-title {
+      font-size: 17px; font-weight: 700; letter-spacing: -0.3px;
+      color: var(--ink);
+    }
+    .header-title span { color: var(--rose); }
+    .header-sub {
+      font-size: 11px; color: var(--ink-3); margin-top: 1px;
+      letter-spacing: 0.2px;
+    }
+    .header-mark {
+      width: 34px; height: 34px;
+      border: 1.5px solid var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    /* ── Content ────────────────────────────────────────────────────────── */
+    .content {
+      flex: 1;
+      padding: 20px 16px calc(84px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+    }
+
+    /* ── Cards ──────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 12px var(--shadow);
+    }
+    .card-flat {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    /* ── Buttons ────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; border-radius: 12px;
+      font-size: 15px; font-weight: 600;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: var(--rose);
+      color: #fff;
+      padding: 15px 24px; width: 100%;
+      box-shadow: 0 4px 18px rgba(191,58,87,0.35);
+      letter-spacing: 0.2px;
+    }
+    .btn-primary:hover { box-shadow: 0 6px 22px rgba(191,58,87,0.45); }
+    .btn-primary:disabled { opacity: 0.4; pointer-events: none; }
+    .btn-ghost {
+      background: var(--surface-2);
+      color: var(--ink-2);
+      padding: 10px 18px;
+      border: 1px solid var(--border);
+    }
+    .btn-ghost-rose {
+      background: var(--rose-lt);
+      color: var(--rose);
+      padding: 10px 18px;
+      border: 1px solid color-mix(in srgb, var(--rose) 20%, transparent);
+    }
+    .btn-ghost-plum {
+      background: var(--plum-lt);
+      color: var(--plum);
+      padding: 10px 18px;
+      border: 1px solid color-mix(in srgb, var(--plum) 20%, transparent);
+    }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+
+    /* ── Bottom nav ─────────────────────────────────────────────────────── */
     .nav {
       position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
       width: 100%; max-width: 480px;
-      background: white;
-      border-top: 1px solid #ffe0e6;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
       display: flex; justify-content: space-around;
-      padding: 8px 0 max(12px, env(safe-area-inset-bottom));
+      padding: 8px 8px max(10px, env(safe-area-inset-bottom));
       z-index: 100;
-      box-shadow: 0 -4px 20px rgba(255,105,135,0.1);
     }
     .nav-btn {
       display: flex; flex-direction: column; align-items: center;
-      background: none; border: none; cursor: pointer;
-      color: #ccc; font-size: 11px; gap: 4px; padding: 6px 14px;
-      transition: all 0.2s; min-width: 64px;
+      gap: 3px; min-width: 60px; padding: 6px 8px;
+      border-radius: 14px; transition: background 0.18s;
       -webkit-tap-highlight-color: transparent;
     }
-    .nav-btn.active { color: #ff6987; }
-    .nav-btn.active .icon { transform: scale(1.15); }
-    .nav-btn .icon { font-size: 24px; transition: transform 0.2s; }
-
-    /* Header */
-    .header {
-      background: linear-gradient(135deg, #ff6987, #ff9f6b);
-      color: white;
-      padding: calc(16px + env(safe-area-inset-top)) 20px 14px;
-      display: flex; align-items: center; justify-content: space-between;
-      box-shadow: 0 4px 15px rgba(255,105,135,0.3);
+    .nav-btn.active { background: var(--rose-lt); }
+    .nav-icon { font-size: 20px; line-height: 1; }
+    .nav-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+      color: var(--ink-3); transition: color 0.18s;
     }
-    .header h1 { font-size: 20px; font-weight: 700; }
-    .header .subtitle { font-size: 12px; opacity: 0.85; }
+    .nav-btn.active .nav-label { color: var(--rose); }
 
-    /* Scrollable content */
-    .content { padding: 16px; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
-
-    /* Cards */
-    .card {
-      background: white;
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 14px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    /* ── Section headings ───────────────────────────────────────────────── */
+    .section-title {
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--ink-3); margin-bottom: 10px;
     }
 
-    /* Buttons */
-    .btn {
-      border: none; cursor: pointer; border-radius: 14px;
-      font-size: 15px; font-weight: 600; transition: all 0.2s;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #ff6987, #ff9f6b);
-      color: white; padding: 14px 24px; width: 100%;
-      box-shadow: 0 4px 15px rgba(255,105,135,0.4);
-    }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,105,135,0.5); }
-    .btn-secondary {
-      background: #fff0f3; color: #ff6987;
-      padding: 10px 20px; border: 2px solid #ffccd5;
-    }
-    .btn-outline {
-      background: white; color: #666; padding: 10px 20px;
-      border: 2px solid #eee;
-    }
-
-    /* Setup screen */
-    .setup-screen {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 100vh;
-      padding: 30px 24px; text-align: center;
-    }
-    .setup-logo { font-size: 72px; margin-bottom: 16px; }
-    .setup-title { font-size: 26px; font-weight: 700; color: #ff6987; margin-bottom: 8px; }
-    .setup-subtitle { color: #888; font-size: 15px; margin-bottom: 36px; }
-    .setup-label { font-size: 13px; color: #666; margin-bottom: 6px; text-align: left; font-weight: 600; }
-    .setup-input {
-      width: 100%; padding: 14px 18px; border-radius: 14px;
-      border: 2px solid #ffe0e6; font-size: 16px;
-      outline: none; margin-bottom: 16px;
-      transition: border 0.2s;
-    }
-    .setup-input:focus { border-color: #ff6987; }
-
-    /* Flashcard */
-    .flashcard-container { perspective: 1000px; height: 220px; margin: 10px 0; }
-    .flashcard {
-      width: 100%; height: 100%; position: relative;
-      transform-style: preserve-3d; transition: transform 0.5s;
-      cursor: pointer;
-    }
-    .flashcard.flipped { transform: rotateY(180deg); }
-    .flashcard-front, .flashcard-back {
-      position: absolute; width: 100%; height: 100%;
-      border-radius: 20px; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      backface-visibility: hidden;
-    }
-    .flashcard-front {
-      background: linear-gradient(135deg, #ff6987, #ff9f6b);
-      color: white;
-    }
-    .flashcard-back {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white; transform: rotateY(180deg);
-    }
-    .card-kana { font-size: 72px; margin-bottom: 8px; }
-    .card-label { font-size: 13px; opacity: 0.8; }
-    .card-romaji { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
-    .card-meaning { font-size: 20px; }
-
-    /* Progress bars */
-    .progress-bar {
-      height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; border-radius: 4px;
-      background: linear-gradient(90deg, #ff6987, #ff9f6b);
+    /* ── Progress bar ───────────────────────────────────────────────────── */
+    .prog-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .prog-fill {
+      height: 100%; border-radius: 3px;
+      background: var(--rose);
       transition: width 0.4s ease;
     }
 
-    /* Partner scores */
-    .partner-row {
-      display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
-    }
-    .partner-avatar {
-      width: 44px; height: 44px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-    }
-
-    /* Quiz */
-    .quiz-question {
-      text-align: center; padding: 20px;
-      font-size: 52px; margin: 10px 0;
-    }
-    .quiz-question-text { font-size: 16px; color: #666; margin-bottom: 8px; }
-    .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
-    .quiz-option {
-      padding: 16px 10px; border-radius: 14px;
-      border: 2px solid #eee; background: white;
-      font-size: 16px; cursor: pointer; transition: all 0.2s;
-      font-weight: 500;
-    }
-    .quiz-option:hover { border-color: #ff6987; background: #fff0f3; }
-    .quiz-option.correct { background: #e8f8e8; border-color: #4caf50; color: #2e7d32; }
-    .quiz-option.wrong { background: #fde8e8; border-color: #f44336; color: #c62828; }
-    .quiz-option:disabled { cursor: not-allowed; }
-
-    /* Vocab grid */
-    .vocab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .vocab-card {
-      background: white; border-radius: 16px; padding: 16px 12px;
-      text-align: center; cursor: pointer; transition: all 0.2s;
-      border: 2px solid #ffe0e6;
-    }
-    .vocab-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,105,135,0.2); }
-    .vocab-kana { font-size: 28px; margin-bottom: 4px; }
-    .vocab-korean { font-size: 13px; color: #666; }
-    .vocab-romaji { font-size: 11px; color: #aaa; }
-
-    /* Category tabs */
-    .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    /* ── Pill tabs ──────────────────────────────────────────────────────── */
+    .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
     .tabs::-webkit-scrollbar { display: none; }
     .tab {
-      white-space: nowrap; padding: 8px 16px; border-radius: 20px;
-      border: 2px solid #ffe0e6; background: white;
-      font-size: 13px; cursor: pointer; transition: all 0.2s; font-weight: 500;
+      white-space: nowrap; padding: 7px 15px; border-radius: 20px;
+      font-size: 13px; font-weight: 600;
+      background: var(--surface-2); color: var(--ink-3);
+      border: 1px solid var(--border);
+      transition: all 0.18s;
     }
-    .tab.active { background: #ff6987; color: white; border-color: #ff6987; }
+    .tab.active { background: var(--rose); color: #fff; border-color: transparent; }
 
-    /* Badge */
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    /* ── Mode toggle ────────────────────────────────────────────────────── */
+    .toggle-wrap {
+      display: grid; grid-template-columns: 1fr 1fr;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 3px; gap: 3px; margin-bottom: 16px;
     }
-    .badge-pink { background: #fff0f3; color: #ff6987; }
-    .badge-blue { background: #f0f4ff; color: #667eea; }
-    .badge-green { background: #e8f8e8; color: #4caf50; }
+    .toggle-btn {
+      padding: 9px; border-radius: 9px; font-size: 14px; font-weight: 600;
+      color: var(--ink-3); transition: all 0.18s;
+    }
+    .toggle-btn.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 6px var(--shadow); }
 
-    /* Heart animation */
-    @keyframes heartbeat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
-    .heartbeat { animation: heartbeat 1.5s ease-in-out infinite; display: inline-block; }
-
-    /* Streak flame */
-    .streak-box {
+    /* ── Setup screen ───────────────────────────────────────────────────── */
+    .setup-wrap {
       display: flex; flex-direction: column; align-items: center;
-      background: linear-gradient(135deg, #ff6987, #ff9f6b);
-      border-radius: 16px; padding: 16px; color: white;
+      justify-content: center;
+      min-height: 100vh; min-height: -webkit-fill-available;
+      padding: 48px 28px;
+      background: var(--bg);
+    }
+    .setup-mark { margin-bottom: 24px; }
+    .setup-kicker {
+      font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase;
+      color: var(--rose); font-weight: 700; margin-bottom: 8px;
+    }
+    .setup-title {
+      font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+      font-size: 28px; font-weight: normal;
+      color: var(--ink); line-height: 1.25;
+      text-align: center; text-wrap: balance;
+      margin-bottom: 6px;
+    }
+    .setup-ja {
+      font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+      font-size: 14px; color: var(--ink-3); margin-bottom: 40px;
+      letter-spacing: 2px;
+    }
+    .setup-form { width: 100%; max-width: 340px; }
+    .field-group { margin-bottom: 16px; }
+    .field-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--ink-3); margin-bottom: 7px;
+      display: block;
+    }
+    .field-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 16px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .field-input::placeholder { color: var(--ink-3); }
+    .field-input:focus {
+      border-color: var(--rose);
+      box-shadow: 0 0 0 3px var(--rose-lt);
     }
 
-    /* Category icon cards */
-    .cat-card {
-      background: white; border-radius: 16px; padding: 18px 14px;
-      text-align: center; cursor: pointer; border: 2px solid #ffe0e6;
-      transition: all 0.2s;
+    /* ── Flashcard ──────────────────────────────────────────────────────── */
+    .fc-wrap { perspective: 1200px; height: 230px; margin-bottom: 14px; }
+    .fc {
+      width: 100%; height: 100%; position: relative;
+      transform-style: preserve-3d; transition: transform 0.48s cubic-bezier(.4,0,.2,1);
+      cursor: pointer;
     }
-    .cat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(255,105,135,0.2); }
-    .cat-icon { font-size: 36px; margin-bottom: 8px; }
-    .cat-name { font-size: 13px; font-weight: 600; color: #555; }
-    .cat-count { font-size: 11px; color: #aaa; margin-top: 2px; }
-
-    /* Today word */
-    .today-word {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      border-radius: 20px; padding: 20px; color: white; text-align: center;
+    .fc.flipped { transform: rotateY(180deg); }
+    .fc-face {
+      position: absolute; width: 100%; height: 100%;
+      border-radius: 20px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      backface-visibility: hidden;
     }
-    .today-label { font-size: 12px; opacity: 0.8; margin-bottom: 8px; }
-    .today-kana { font-size: 52px; margin-bottom: 8px; }
-    .today-korean { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-    .today-romaji { font-size: 14px; opacity: 0.8; }
-
-    /* Score display */
-    .score-display {
-      display: flex; justify-content: space-around; text-align: center;
+    .fc-front {
+      background: var(--rose);
+      color: #fff;
     }
-    .score-num { font-size: 32px; font-weight: 700; color: #ff6987; }
-    .score-label { font-size: 12px; color: #888; }
-
-    /* Notification toast */
-    .toast {
-      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-      background: #333; color: white; padding: 12px 24px; border-radius: 14px;
-      font-size: 14px; z-index: 999; opacity: 0;
-      transition: opacity 0.3s;
+    .fc-back {
+      background: var(--plum);
+      color: #fff;
+      transform: rotateY(180deg);
     }
-    .toast.show { opacity: 1; }
+    .fc-hint { font-size: 11px; opacity: 0.6; margin-bottom: 10px; letter-spacing: 0.5px; }
+    .fc-kana {
+      font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+      font-size: 64px; line-height: 1; margin-bottom: 6px;
+    }
+    .fc-tag { font-size: 12px; opacity: 0.55; letter-spacing: 0.5px; }
+    .fc-romaji { font-size: 32px; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px; }
+    .fc-meaning { font-size: 20px; opacity: 0.9; }
 
-    /* Hiragana table */
+    /* ── Vocab grid ─────────────────────────────────────────────────────── */
+    .vocab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .vocab-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 10px;
+      text-align: center; cursor: pointer;
+      transition: transform 0.18s, box-shadow 0.18s;
+    }
+    .vocab-card:active { transform: scale(0.97); }
+    .vocab-kana {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 24px; margin-bottom: 5px; color: var(--ink);
+    }
+    .vocab-korean { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+    .vocab-romaji { font-size: 10px; color: var(--ink-3); margin-top: 2px; }
+    .vocab-checks { display: flex; gap: 4px; justify-content: center; margin-top: 6px; }
+    .v-check {
+      font-size: 10px; padding: 2px 6px; border-radius: 6px;
+      background: var(--rose-lt); color: var(--rose); font-weight: 600;
+    }
+    .v-check.plum { background: var(--plum-lt); color: var(--plum); }
+
+    /* ── Today word ─────────────────────────────────────────────────────── */
+    .today-card {
+      background: var(--plum);
+      border-radius: 18px; padding: 24px 20px;
+      color: #fff; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .today-card::before {
+      content: '二'; position: absolute;
+      font-family: Georgia, serif; font-size: 140px;
+      color: rgba(255,255,255,0.04);
+      right: -20px; top: -20px; line-height: 1;
+      pointer-events: none;
+    }
+    .today-eyebrow {
+      font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+      opacity: 0.55; margin-bottom: 12px; font-weight: 600;
+    }
+    .today-kana {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 56px; line-height: 1; margin-bottom: 10px;
+    }
+    .today-korean { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .today-romaji { font-size: 13px; opacity: 0.55; letter-spacing: 0.5px; }
+
+    /* ── Stat row ───────────────────────────────────────────────────────── */
+    .stat-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .stat-tile {
+      flex: 1; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 10px; text-align: center;
+    }
+    .stat-num {
+      font-family: Georgia, serif;
+      font-size: 28px; font-weight: normal;
+      color: var(--rose); line-height: 1; margin-bottom: 4px;
+    }
+    .stat-label { font-size: 10px; color: var(--ink-3); letter-spacing: 0.4px; font-weight: 600; text-transform: uppercase; }
+
+    /* ── Banner card ────────────────────────────────────────────────────── */
+    .banner {
+      background: var(--rose);
+      border-radius: 18px; padding: 18px 20px;
+      color: #fff; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .banner-text { font-size: 12px; opacity: 0.8; margin-bottom: 3px; }
+    .banner-name { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    .banner-ja {
+      font-family: Georgia, serif;
+      font-size: 36px; opacity: 0.25; line-height: 1;
+    }
+
+    /* ── Partner progress row ───────────────────────────────────────────── */
+    .partner-row { margin-bottom: 14px; }
+    .partner-meta {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 6px;
+    }
+    .partner-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+    .partner-count { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+    .partner-row:last-child { margin-bottom: 0; }
+
+    /* ── Quiz ───────────────────────────────────────────────────────────── */
+    .quiz-scorebar {
+      background: var(--rose);
+      border-radius: 16px; padding: 14px 20px; color: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .quiz-scorebar.plum { background: var(--plum); }
+    .quiz-score-block { text-align: center; }
+    .quiz-score-name { font-size: 11px; opacity: 0.7; margin-bottom: 2px; }
+    .quiz-score-num { font-family: Georgia, serif; font-size: 32px; line-height: 1; }
+    .quiz-mid { font-size: 12px; text-align: center; opacity: 0.8; line-height: 1.5; }
+    .quiz-q-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px; padding: 28px 20px;
+      text-align: center; margin-bottom: 12px;
+    }
+    .quiz-eyebrow { font-size: 11px; color: var(--ink-3); letter-spacing: 0.5px; margin-bottom: 8px; }
+    .quiz-kana {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 56px; color: var(--ink); margin-bottom: 6px; line-height: 1;
+    }
+    .quiz-romaji { font-size: 13px; color: var(--ink-3); letter-spacing: 0.5px; }
+    .quiz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .quiz-opt {
+      padding: 16px 10px; border-radius: 14px;
+      border: 1.5px solid var(--border); background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--ink);
+      transition: all 0.18s; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .quiz-opt:active:not([disabled]) { transform: scale(0.96); }
+    .quiz-opt.correct { background: var(--ok-lt); border-color: var(--ok); color: var(--ok); }
+    .quiz-opt.wrong { background: var(--err-lt); border-color: var(--err); color: var(--err); }
+    .quiz-opt:disabled { cursor: not-allowed; }
+    .quiz-rule { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+    .quiz-rule-num { color: var(--rose); font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .quiz-rule-text { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+
+    /* ── Hiragana ───────────────────────────────────────────────────────── */
     .hira-grid {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
     }
     .hira-cell {
-      background: white; border-radius: 12px; padding: 12px 6px;
-      text-align: center; border: 2px solid #ffe0e6; cursor: pointer;
-      transition: all 0.2s;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 4px;
+      text-align: center; cursor: pointer; transition: all 0.18s;
     }
-    .hira-cell:hover, .hira-cell.learned { background: #ff6987; color: white; border-color: #ff6987; }
-    .hira-char { font-size: 24px; }
-    .hira-roma { font-size: 10px; color: inherit; margin-top: 2px; opacity: 0.7; }
-    .section-title { font-size: 17px; font-weight: 700; color: #333; margin-bottom: 12px; }
+    .hira-cell:active { transform: scale(0.93); }
+    .hira-cell.learned { background: var(--rose); border-color: transparent; }
+    .hira-char {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 22px; color: var(--ink); display: block; line-height: 1;
+    }
+    .hira-cell.learned .hira-char { color: #fff; }
+    .hira-rom {
+      font-size: 9px; color: var(--ink-3); margin-top: 3px;
+      display: block; letter-spacing: 0.3px;
+    }
+    .hira-cell.learned .hira-rom { color: rgba(255,255,255,0.65); }
 
-    input[type="text"] { font-family: inherit; }
-    button { font-family: inherit; }
+    /* ── Tip card ───────────────────────────────────────────────────────── */
+    .tip-card {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 16px;
+    }
+    .tip-label { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
+    .tip-text { font-size: 13px; color: var(--ink-2); line-height: 1.65; }
+
+    /* ── Toast ──────────────────────────────────────────────────────────── */
+    .toast {
+      position: fixed; top: calc(20px + env(safe-area-inset-top));
+      left: 50%; transform: translateX(-50%) translateY(-10px);
+      background: var(--ink); color: var(--bg);
+      padding: 11px 22px; border-radius: 30px;
+      font-size: 14px; font-weight: 600;
+      z-index: 999; opacity: 0;
+      transition: opacity 0.22s, transform 0.22s;
+      white-space: nowrap; letter-spacing: 0.2px;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Nav card controls ──────────────────────────────────────────────── */
+    .fc-controls {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .fc-count { font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+    /* ── Result screen ──────────────────────────────────────────────────── */
+    .result-vs { display: flex; align-items: center; justify-content: space-around; padding: 10px 0; }
+    .result-score-block { text-align: center; }
+    .result-score-name { font-size: 12px; color: var(--ink-3); margin-bottom: 4px; }
+    .result-score-num {
+      font-family: Georgia, serif; font-size: 52px; font-weight: normal;
+      color: var(--rose); line-height: 1;
+    }
+    .result-score-num.plum { color: var(--plum); }
+    .result-vs-sep { font-size: 18px; color: var(--border); font-weight: 700; }
+
+    /* ── Animations ─────────────────────────────────────────────────────── */
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+    .pulse { animation: pulse 2.5s ease-in-out infinite; display: inline-block; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fc { transition: none; }
+      .pulse { animation: none; }
+    }
   </style>
 </head>
 <body>
@@ -280,7 +530,7 @@
 <script type="text/babel">
 const { useState, useEffect, useCallback } = React;
 
-// ─── Data ──────────────────────────────────────────────────────────────────
+/* ── Data ──────────────────────────────────────────────────────────────── */
 const HIRAGANA = [
   {char:'あ',rom:'a'},{char:'い',rom:'i'},{char:'う',rom:'u'},{char:'え',rom:'e'},{char:'お',rom:'o'},
   {char:'か',rom:'ka'},{char:'き',rom:'ki'},{char:'く',rom:'ku'},{char:'け',rom:'ke'},{char:'こ',rom:'ko'},
@@ -338,14 +588,11 @@ const VOCAB_CATEGORIES = {
 };
 
 const ALL_VOCAB = Object.values(VOCAB_CATEGORIES).flat();
-
-const CATEGORY_ICONS = { '일상': '🌸', '사랑': '💕', '음식': '🍣', '여행': '✈️' };
+const CAT_ICONS = { '일상':'🌸', '사랑':'♡', '음식':'🍣', '여행':'✈' };
 
 function getTodayWord() {
-  const day = Math.floor(Date.now() / 86400000);
-  return ALL_VOCAB[day % ALL_VOCAB.length];
+  return ALL_VOCAB[Math.floor(Date.now() / 86400000) % ALL_VOCAB.length];
 }
-
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -354,125 +601,124 @@ function shuffle(arr) {
   }
   return a;
 }
+function loadState() { try { return JSON.parse(localStorage.getItem('jpCouple')||'null'); } catch { return null; } }
+function saveState(s) { localStorage.setItem('jpCouple', JSON.stringify(s)); }
 
-// ─── LocalStorage helpers ──────────────────────────────────────────────────
-function loadState() {
-  try { return JSON.parse(localStorage.getItem('jpCouple') || 'null'); } catch { return null; }
-}
-function saveState(s) {
-  localStorage.setItem('jpCouple', JSON.stringify(s));
+/* ── Setup SVG mark ────────────────────────────────────────────────────── */
+function CoupleMark() {
+  return (
+    <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="36" cy="48" r="28" stroke="currentColor" strokeWidth="1.2" opacity="0.2"/>
+      <circle cx="60" cy="48" r="28" stroke="currentColor" strokeWidth="1.2" opacity="0.2"/>
+      <circle cx="48" cy="48" r="16" stroke="currentColor" strokeWidth="1" opacity="0.12"/>
+      <text x="48" y="55" textAnchor="middle"
+        fontFamily="Georgia, 'Hiragino Mincho ProN', serif"
+        fontSize="20" fill="currentColor" letterSpacing="4">二人</text>
+    </svg>
+  );
 }
 
-// ─── Toast ─────────────────────────────────────────────────────────────────
+/* ── Toast ─────────────────────────────────────────────────────────────── */
 function Toast({ msg }) {
-  return msg ? <div className={`toast show`}>{msg}</div> : null;
+  return <div className={`toast${msg?' show':''}`}>{msg}</div>;
 }
 
-// ─── Setup Screen ──────────────────────────────────────────────────────────
+/* ── Setup Screen ──────────────────────────────────────────────────────── */
 function SetupScreen({ onComplete }) {
   const [p1, setP1] = useState('');
   const [p2, setP2] = useState('');
+  const ok = p1.trim() && p2.trim();
   return (
-    <div className="setup-screen">
-      <div className="setup-logo">💑</div>
-      <h1 className="setup-title">우리 둘이 일본어</h1>
-      <p className="setup-subtitle">함께 배우면 더 재밌어요! 두 분의 이름을 입력해주세요</p>
+    <div className="setup-wrap">
+      <div className="setup-mark" style={{color:'var(--rose)'}}>
+        <CoupleMark />
+      </div>
+      <div className="setup-kicker">둘이서 · 함께 · 日本語</div>
+      <h1 className="setup-title">우리 둘이<br/>일본어</h1>
+      <p className="setup-ja">ふたりで にほんご</p>
 
-      <div style={{width:'100%', maxWidth:340}}>
-        <div className="setup-label">👩 첫 번째 파트너</div>
-        <input
-          className="setup-input"
-          placeholder="이름 또는 닉네임"
-          value={p1} onChange={e => setP1(e.target.value)}
-        />
-        <div className="setup-label">👨 두 번째 파트너</div>
-        <input
-          className="setup-input"
-          placeholder="이름 또는 닉네임"
-          value={p2} onChange={e => setP2(e.target.value)}
-        />
-        <button
-          className="btn btn-primary"
-          style={{marginTop:8}}
-          disabled={!p1.trim() || !p2.trim()}
-          onClick={() => onComplete(p1.trim(), p2.trim())}
-        >
-          일본어 여행 시작하기 🌸
+      <div className="setup-form">
+        <div className="field-group">
+          <label className="field-label">첫 번째 파트너</label>
+          <input
+            className="field-input" type="text"
+            placeholder="이름 또는 닉네임"
+            value={p1} onChange={e => setP1(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
+        <div className="field-group">
+          <label className="field-label">두 번째 파트너</label>
+          <input
+            className="field-input" type="text"
+            placeholder="이름 또는 닉네임"
+            value={p2} onChange={e => setP2(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
+        <button className="btn btn-primary" style={{marginTop:8}} disabled={!ok}
+          onClick={() => onComplete(p1.trim(), p2.trim())}>
+          일본어 여행 시작하기
         </button>
       </div>
     </div>
   );
 }
 
-// ─── Home Tab ──────────────────────────────────────────────────────────────
-function HomeTab({ state, setState }) {
+/* ── Home Tab ──────────────────────────────────────────────────────────── */
+function HomeTab({ state }) {
   const todayWord = getTodayWord();
   const totalVocab = ALL_VOCAB.length;
-  const p1Learned = state.learned.filter(k => state.p1Learned?.includes(k)).length;
-  const p2Learned = state.learned.filter(k => state.p2Learned?.includes(k)).length;
 
   return (
     <div className="content">
-      {/* Header greeting */}
-      <div className="card" style={{background:'linear-gradient(135deg,#ff6987,#ff9f6b)',color:'white'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div>
-            <div style={{fontSize:13,opacity:0.85,marginBottom:4}}>오늘도 함께 공부해요 💕</div>
-            <div style={{fontSize:20,fontWeight:700}}>{state.p1} & {state.p2}</div>
-          </div>
-          <div style={{fontSize:48}}>🌸</div>
+      <div className="banner">
+        <div>
+          <div className="banner-text">오늘도 함께 공부해요</div>
+          <div className="banner-name">{state.p1} &amp; {state.p2}</div>
         </div>
+        <div className="banner-ja pulse">二人</div>
       </div>
 
-      {/* Streak */}
-      <div className="card">
-        <div style={{display:'flex',justifyContent:'space-around',textAlign:'center'}}>
-          <div>
-            <div style={{fontSize:28,fontWeight:700,color:'#ff6987'}}>{state.streak || 0}</div>
-            <div style={{fontSize:12,color:'#888'}}>🔥 연속 학습일</div>
+      <div className="stat-row">
+        {[
+          {num: state.streak||0, label:'연속 학습일', icon:'🔥'},
+          {num: state.learned?.length||0, label:'배운 단어', icon:'📚'},
+          {num: state.quizWins||0, label:'퀴즈 승리', icon:'🏆'},
+        ].map(s => (
+          <div key={s.label} className="stat-tile">
+            <div className="stat-num">{s.num}</div>
+            <div className="stat-label">{s.icon} {s.label}</div>
           </div>
-          <div>
-            <div style={{fontSize:28,fontWeight:700,color:'#667eea'}}>{state.learned?.length || 0}</div>
-            <div style={{fontSize:12,color:'#888'}}>📚 배운 단어</div>
-          </div>
-          <div>
-            <div style={{fontSize:28,fontWeight:700,color:'#4caf50'}}>{state.quizWins || 0}</div>
-            <div style={{fontSize:12,color:'#888'}}>🏆 퀴즈 승리</div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Today's word */}
-      <div style={{marginBottom:14}}>
-        <div className="section-title">오늘의 단어 ✨</div>
-        <div className="today-word">
-          <div className="today-label">오늘 꼭 외워봐요!</div>
+      <div style={{marginBottom:12}}>
+        <div className="section-title">오늘의 단어</div>
+        <div className="today-card">
+          <div className="today-eyebrow">오늘 꼭 외워봐요</div>
           <div className="today-kana">{todayWord.kana}</div>
           <div className="today-korean">{todayWord.korean}</div>
           <div className="today-romaji">{todayWord.romaji}</div>
         </div>
       </div>
 
-      {/* Partner progress */}
-      <div style={{marginBottom:14}}>
-        <div className="section-title">파트너 진도 현황</div>
-        <div className="card">
+      <div style={{marginBottom:12}}>
+        <div className="section-title">파트너 진도</div>
+        <div className="card" style={{paddingBottom:14}}>
           {[
-            {name: state.p1, avatar:'👩', learned: state.p1Learned?.length || 0, color:'#ff6987'},
-            {name: state.p2, avatar:'👨', learned: state.p2Learned?.length || 0, color:'#667eea'},
+            {name:state.p1, learned:state.p1Learned?.length||0, isPlum:false},
+            {name:state.p2, learned:state.p2Learned?.length||0, isPlum:true},
           ].map(p => (
-            <div key={p.name} style={{marginBottom:12}}>
-              <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span style={{fontSize:20}}>{p.avatar}</span>
-                  <span style={{fontWeight:600}}>{p.name}</span>
-                </div>
-                <span style={{fontSize:13,color:'#888'}}>{p.learned} / {totalVocab} 단어</span>
+            <div key={p.name} className="partner-row">
+              <div className="partner-meta">
+                <span className="partner-name">{p.name}</span>
+                <span className="partner-count">{p.learned} / {totalVocab}</span>
               </div>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{
+              <div className="prog-track">
+                <div className="prog-fill" style={{
                   width:`${(p.learned/totalVocab)*100}%`,
-                  background:`linear-gradient(90deg, ${p.color}, ${p.color}cc)`
+                  background: p.isPlum ? 'var(--plum)' : 'var(--rose)',
                 }}/>
               </div>
             </div>
@@ -480,23 +726,22 @@ function HomeTab({ state, setState }) {
         </div>
       </div>
 
-      {/* Quick tips */}
-      <div className="card" style={{background:'#f0f4ff'}}>
-        <div style={{fontSize:14,color:'#667eea',fontWeight:600,marginBottom:8}}>💡 오늘의 팁</div>
-        <div style={{fontSize:13,color:'#555',lineHeight:1.6}}>
-          파트너와 함께 퀴즈 배틀을 해보세요! 경쟁하면서 배우면 두 배로 빠르게 외울 수 있어요 🏆
+      <div className="tip-card">
+        <div className="tip-label">오늘의 팁</div>
+        <div className="tip-text">
+          퀴즈 배틀에서 번갈아 문제를 풀어보세요. 경쟁하면서 배우면 기억에 두 배 오래 남아요.
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Vocab Tab ─────────────────────────────────────────────────────────────
+/* ── Vocab Tab ─────────────────────────────────────────────────────────── */
 function VocabTab({ state, setState }) {
   const [activeCat, setActiveCat] = useState('일상');
   const [flipped, setFlipped] = useState(null);
   const [cardIdx, setCardIdx] = useState(0);
-  const [mode, setMode] = useState('grid'); // 'grid' | 'card'
+  const [mode, setMode] = useState('grid');
 
   const words = VOCAB_CATEGORIES[activeCat] || [];
   const word = words[cardIdx];
@@ -504,33 +749,25 @@ function VocabTab({ state, setState }) {
   const markLearned = (kana, partner) => {
     const key = partner === 1 ? 'p1Learned' : 'p2Learned';
     const current = state[key] || [];
-    if (!current.includes(kana)) {
-      const next = { ...state, [key]: [...current, kana] };
-      if (!state.learned?.includes(kana)) next.learned = [...(state.learned || []), kana];
-      setState(next);
-    }
+    if (current.includes(kana)) return;
+    const next = { ...state, [key]: [...current, kana] };
+    if (!state.learned?.includes(kana)) next.learned = [...(state.learned||[]), kana];
+    setState(next);
   };
 
   return (
     <div className="content">
-      <div className="section-title">어휘 학습 📖</div>
-
-      {/* Mode toggle */}
-      <div style={{display:'flex',gap:8,marginBottom:14}}>
-        <button className={`btn ${mode==='grid'?'btn-primary':'btn-outline'}`}
-          style={{flex:1,padding:'10px'}}
-          onClick={() => setMode('grid')}>목록 보기</button>
-        <button className={`btn ${mode==='card'?'btn-primary':'btn-outline'}`}
-          style={{flex:1,padding:'10px'}}
+      <div className="toggle-wrap">
+        <button className={`toggle-btn${mode==='grid'?' active':''}`} onClick={() => setMode('grid')}>목록 보기</button>
+        <button className={`toggle-btn${mode==='card'?' active':''}`}
           onClick={() => { setMode('card'); setCardIdx(0); setFlipped(false); }}>카드 학습</button>
       </div>
 
-      {/* Category tabs */}
-      <div className="tabs" style={{marginBottom:16}}>
+      <div className="tabs" style={{marginBottom:14}}>
         {Object.keys(VOCAB_CATEGORIES).map(cat => (
-          <button key={cat} className={`tab ${activeCat===cat?'active':''}`}
+          <button key={cat} className={`tab${activeCat===cat?' active':''}`}
             onClick={() => { setActiveCat(cat); setCardIdx(0); setFlipped(false); }}>
-            {CATEGORY_ICONS[cat]} {cat}
+            {CAT_ICONS[cat]} {cat}
           </button>
         ))}
       </div>
@@ -545,23 +782,23 @@ function VocabTab({ state, setState }) {
                 <div className="vocab-kana">{w.kana}</div>
                 {flipped === i ? (
                   <>
-                    <div className="vocab-korean" style={{fontWeight:600,color:'#333'}}>{w.korean}</div>
+                    <div className="vocab-korean" style={{fontWeight:600}}>{w.korean}</div>
                     <div className="vocab-romaji">{w.romaji}</div>
-                    <div style={{display:'flex',gap:4,justifyContent:'center',marginTop:8}}>
-                      <button className="btn btn-secondary" style={{padding:'4px 8px',fontSize:11}}
+                    <div className="vocab-checks" style={{marginTop:8}}>
+                      <button className="btn btn-ghost-rose btn-sm"
                         onClick={e=>{e.stopPropagation();markLearned(w.kana,1);}}>
-                        {p1has?'✓':''} {state.p1}
+                        {p1has?'✓ ':''}{state.p1}
                       </button>
-                      <button className="btn" style={{padding:'4px 8px',fontSize:11,background:'#f0f4ff',color:'#667eea',border:'2px solid #d0d8ff',borderRadius:14}}
+                      <button className="btn btn-ghost-plum btn-sm"
                         onClick={e=>{e.stopPropagation();markLearned(w.kana,2);}}>
-                        {p2has?'✓':''} {state.p2}
+                        {p2has?'✓ ':''}{state.p2}
                       </button>
                     </div>
                   </>
                 ) : (
-                  <div style={{display:'flex',gap:4,justifyContent:'center',marginTop:6}}>
-                    {p1has && <span style={{fontSize:10,color:'#ff6987'}}>👩✓</span>}
-                    {p2has && <span style={{fontSize:10,color:'#667eea'}}>👨✓</span>}
+                  <div className="vocab-checks">
+                    {p1has && <span className="v-check">{state.p1}</span>}
+                    {p2has && <span className="v-check plum">{state.p2}</span>}
                   </div>
                 )}
               </div>
@@ -569,182 +806,146 @@ function VocabTab({ state, setState }) {
           })}
         </div>
       ) : (
-        <div>
-          {/* Flashcard */}
-          <div className="flashcard-container" onClick={() => setFlipped(!flipped)}>
-            <div className={`flashcard ${flipped?'flipped':''}`}>
-              <div className="flashcard-front">
-                <div style={{fontSize:11,opacity:0.7,marginBottom:8}}>탭하면 뒤집어요!</div>
-                <div className="card-kana">{word?.kana}</div>
-                <div className="card-label">{activeCat} 어휘</div>
+        <>
+          <div className="fc-wrap" onClick={() => setFlipped(f=>!f)}>
+            <div className={`fc${flipped?' flipped':''}`}>
+              <div className="fc-face fc-front">
+                <div className="fc-hint">탭하면 뒤집어요</div>
+                <div className="fc-kana">{word?.kana}</div>
+                <div className="fc-tag">{activeCat}</div>
               </div>
-              <div className="flashcard-back">
-                <div className="card-romaji">{word?.romaji}</div>
-                <div className="card-meaning">{word?.korean}</div>
+              <div className="fc-face fc-back">
+                <div className="fc-romaji">{word?.romaji}</div>
+                <div className="fc-meaning">{word?.korean}</div>
               </div>
             </div>
           </div>
 
-          {/* Controls */}
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',margin:'14px 0'}}>
-            <button className="btn btn-outline" style={{padding:'10px 20px'}}
+          <div className="fc-controls">
+            <button className="btn btn-ghost btn-sm"
               onClick={() => { setCardIdx((cardIdx-1+words.length)%words.length); setFlipped(false); }}>
               ← 이전
             </button>
-            <span style={{color:'#888',fontSize:13}}>{cardIdx+1} / {words.length}</span>
-            <button className="btn btn-outline" style={{padding:'10px 20px'}}
+            <span className="fc-count">{cardIdx+1} / {words.length}</span>
+            <button className="btn btn-ghost btn-sm"
               onClick={() => { setCardIdx((cardIdx+1)%words.length); setFlipped(false); }}>
               다음 →
             </button>
           </div>
 
-          {/* Mark learned */}
           {flipped && (
-            <div className="card" style={{background:'#f9f9f9'}}>
-              <div style={{fontSize:13,color:'#666',marginBottom:10,textAlign:'center'}}>외웠나요? 체크해주세요!</div>
-              <div style={{display:'flex',gap:10}}>
-                <button className="btn btn-secondary" style={{flex:1,padding:'12px'}}
+            <div className="card-flat">
+              <div style={{fontSize:12,color:'var(--ink-3)',marginBottom:10,textAlign:'center',letterSpacing:'0.3px'}}>
+                외웠나요?
+              </div>
+              <div style={{display:'flex',gap:8}}>
+                <button className="btn btn-ghost-rose" style={{flex:1,padding:'12px'}}
                   onClick={() => markLearned(word.kana, 1)}>
-                  👩 {state.p1} {state.p1Learned?.includes(word.kana)?'✓ 완료':'외웠어요!'}
+                  {state.p1Learned?.includes(word?.kana)?'✓ 완료':state.p1+' 외웠어요'}
                 </button>
-                <button className="btn" style={{flex:1,padding:'12px',background:'#f0f4ff',color:'#667eea',border:'2px solid #d0d8ff',borderRadius:14}}
+                <button className="btn btn-ghost-plum" style={{flex:1,padding:'12px'}}
                   onClick={() => markLearned(word.kana, 2)}>
-                  👨 {state.p2} {state.p2Learned?.includes(word.kana)?'✓ 완료':'외웠어요!'}
+                  {state.p2Learned?.includes(word?.kana)?'✓ 완료':state.p2+' 외웠어요'}
                 </button>
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
 }
 
-// ─── Quiz Tab ──────────────────────────────────────────────────────────────
+/* ── Quiz Tab ──────────────────────────────────────────────────────────── */
 function QuizTab({ state, setState, showToast }) {
-  const [quizState, setQuizState] = useState('intro'); // intro | playing | result
-  const [currentPlayer, setCurrentPlayer] = useState(1);
+  const [phase, setPhase] = useState('intro');
+  const [player, setPlayer] = useState(1);
   const [scores, setScores] = useState({1:0, 2:0});
   const [round, setRound] = useState(0);
-  const [totalRounds] = useState(10);
-  const [questions, setQuestions] = useState([]);
+  const ROUNDS = 10;
+  const [qs, setQs] = useState([]);
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);
 
   const startQuiz = () => {
-    const pool = shuffle(ALL_VOCAB).slice(0, totalRounds);
-    const qs = pool.map(word => {
-      const wrongs = shuffle(ALL_VOCAB.filter(w => w.kana !== word.kana)).slice(0,3);
-      const options = shuffle([word, ...wrongs]);
-      return { word, options };
-    });
-    setQuestions(qs);
-    setRound(0);
-    setScores({1:0, 2:0});
-    setCurrentPlayer(1);
-    setSelected(null);
-    setAnswered(false);
-    setQuizState('playing');
+    const pool = shuffle(ALL_VOCAB).slice(0, ROUNDS).map(word => ({
+      word, options: shuffle([word, ...shuffle(ALL_VOCAB.filter(w=>w.kana!==word.kana)).slice(0,3)])
+    }));
+    setQs(pool); setRound(0); setScores({1:0,2:0}); setPlayer(1);
+    setSelected(null); setAnswered(false); setPhase('playing');
   };
 
-  const q = questions[round];
+  const q = qs[round];
 
   const handleAnswer = (opt) => {
     if (answered) return;
-    setSelected(opt);
-    setAnswered(true);
-    if (opt.kana === q.word.kana) {
-      setScores(s => ({ ...s, [currentPlayer]: s[currentPlayer] + 1 }));
-      showToast('정답! 🎉');
-    } else {
-      showToast('아쉬워요 😅');
-    }
+    setSelected(opt); setAnswered(true);
+    const correct = opt.kana === q.word.kana;
+    if (correct) { setScores(s=>({...s,[player]:s[player]+1})); showToast('정답! 🎉'); }
+    else showToast('아쉬워요 😅');
     setTimeout(() => {
-      if (round + 1 >= totalRounds) {
-        setQuizState('result');
-      } else {
-        setRound(r => r+1);
-        setCurrentPlayer(p => p === 1 ? 2 : 1);
-        setSelected(null);
-        setAnswered(false);
-      }
+      if (round+1 >= ROUNDS) { setPhase('result'); return; }
+      setRound(r=>r+1); setPlayer(p=>p===1?2:1); setSelected(null); setAnswered(false);
     }, 1200);
   };
 
-  const saveResult = () => {
-    const winner = scores[1] > scores[2] ? 1 : scores[2] > scores[1] ? 2 : 0;
-    const wins = winner > 0 ? (state.quizWins || 0) + 1 : (state.quizWins || 0);
-    setState({ ...state, quizWins: wins });
-  };
-
-  if (quizState === 'intro') return (
+  if (phase === 'intro') return (
     <div className="content">
-      <div className="section-title">커플 퀴즈 배틀 🏆</div>
-      <div className="card" style={{textAlign:'center',padding:28}}>
-        <div style={{fontSize:64,marginBottom:16}}>🎮</div>
-        <div style={{fontSize:18,fontWeight:700,marginBottom:8}}>퀴즈 배틀</div>
-        <div style={{fontSize:14,color:'#888',marginBottom:24,lineHeight:1.7}}>
-          번갈아가며 문제를 풀어요!<br/>
-          {state.p1}와 {state.p2} 중 누가 더 많이 맞힐까요?<br/>
-          총 {10}문제 출제됩니다 🌸
+      <div className="section-title">커플 퀴즈 배틀</div>
+      <div className="card" style={{textAlign:'center',padding:'32px 24px'}}>
+        <div style={{fontSize:56,marginBottom:16}}>⚔️</div>
+        <div style={{fontSize:20,fontWeight:700,marginBottom:8,color:'var(--ink)'}}>
+          {state.p1} vs {state.p2}
         </div>
-        <button className="btn btn-primary" onClick={startQuiz}>배틀 시작! ⚔️</button>
+        <div style={{fontSize:14,color:'var(--ink-2)',marginBottom:28,lineHeight:1.7}}>
+          번갈아가며 총 {ROUNDS}문제를 풀어요.<br/>누가 더 많이 맞힐까요?
+        </div>
+        <button className="btn btn-primary" onClick={startQuiz}>배틀 시작</button>
       </div>
-
-      {/* Rules */}
-      <div className="card">
-        <div style={{fontSize:14,fontWeight:600,marginBottom:10}}>게임 방법</div>
-        {[
-          '일본어 단어를 보고 뜻을 고르세요',
-          '번갈아가며 문제를 풀어요',
-          '맞히면 1점, 틀리면 0점',
-          '10문제 후 최고 점수자가 승리!',
-        ].map((rule, i) => (
-          <div key={i} style={{display:'flex',gap:10,marginBottom:8,fontSize:13,color:'#555'}}>
-            <span style={{color:'#ff6987',fontWeight:700}}>{i+1}.</span>
-            <span>{rule}</span>
+      <div className="card" style={{marginTop:0}}>
+        <div className="section-title" style={{marginBottom:12}}>게임 방법</div>
+        {['일본어 단어를 보고 뜻을 고르세요','두 분이 번갈아가며 문제를 풀어요','정답이면 1점, 10문제 후 높은 점수 승리'].map((t,i)=>(
+          <div key={i} className="quiz-rule">
+            <span className="quiz-rule-num">{i+1}</span>
+            <span className="quiz-rule-text">{t}</span>
           </div>
         ))}
       </div>
     </div>
   );
 
-  if (quizState === 'result') {
-    const winner = scores[1] > scores[2] ? state.p1 : scores[2] > scores[1] ? state.p2 : null;
+  if (phase === 'result') {
+    const winner = scores[1]>scores[2]?state.p1:scores[2]>scores[1]?state.p2:null;
     return (
       <div className="content">
-        <div className="section-title">결과 발표 🎊</div>
-        <div className="card" style={{textAlign:'center',padding:28}}>
-          <div style={{fontSize:64,marginBottom:12}}>
-            {winner ? '🏆' : '🤝'}
-          </div>
-          <div style={{fontSize:20,fontWeight:700,marginBottom:8}}>
+        <div className="section-title">결과 발표</div>
+        <div className="card" style={{textAlign:'center',padding:'28px 24px'}}>
+          <div style={{fontSize:52,marginBottom:12}}>{winner?'🏆':'🤝'}</div>
+          <div style={{fontSize:22,fontWeight:700,marginBottom:6,color:'var(--ink)'}}>
             {winner ? `${winner} 승리!` : '무승부!'}
           </div>
-          <div style={{fontSize:14,color:'#888',marginBottom:24}}>
-            {winner ? `축하해요! 잘했어요 🎉` : '두 분 다 잘하셨어요!'}
+          <div style={{fontSize:14,color:'var(--ink-3)',marginBottom:24}}>
+            {winner ? '축하해요!' : '두 분 다 수고하셨어요!'}
           </div>
-
-          <div className="score-display" style={{marginBottom:24}}>
-            <div>
-              <div style={{fontSize:13,color:'#888',marginBottom:4}}>👩 {state.p1}</div>
-              <div style={{fontSize:40,fontWeight:700,color:'#ff6987'}}>{scores[1]}</div>
+          <div className="result-vs" style={{marginBottom:28}}>
+            <div className="result-score-block">
+              <div className="result-score-name">{state.p1}</div>
+              <div className="result-score-num">{scores[1]}</div>
             </div>
-            <div style={{fontSize:24,color:'#ccc',alignSelf:'center'}}>VS</div>
-            <div>
-              <div style={{fontSize:13,color:'#888',marginBottom:4}}>👨 {state.p2}</div>
-              <div style={{fontSize:40,fontWeight:700,color:'#667eea'}}>{scores[2]}</div>
+            <div className="result-vs-sep">VS</div>
+            <div className="result-score-block">
+              <div className="result-score-name">{state.p2}</div>
+              <div className="result-score-num plum">{scores[2]}</div>
             </div>
           </div>
-
-          <div style={{display:'flex',gap:10}}>
-            <button className="btn btn-secondary" style={{flex:1,padding:'12px'}}
-              onClick={() => { saveResult(); setQuizState('intro'); }}>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-ghost" style={{flex:1,padding:'13px'}}
+              onClick={() => { setState({...state,quizWins:(state.quizWins||0)+(winner?1:0)}); setPhase('intro'); }}>
               홈으로
             </button>
-            <button className="btn btn-primary" style={{flex:1,padding:'12px'}}
-              onClick={() => { saveResult(); startQuiz(); }}>
-              다시 도전!
+            <button className="btn btn-primary" style={{flex:1,padding:'13px'}}
+              onClick={() => { setState({...state,quizWins:(state.quizWins||0)+(winner?1:0)}); startQuiz(); }}>
+              다시 도전
             </button>
           </div>
         </div>
@@ -752,48 +953,39 @@ function QuizTab({ state, setState, showToast }) {
     );
   }
 
-  // Playing
-  const player = currentPlayer === 1 ? state.p1 : state.p2;
-  const playerColor = currentPlayer === 1 ? '#ff6987' : '#667eea';
-  const playerIcon = currentPlayer === 1 ? '👩' : '👨';
-
+  const isP1 = player === 1;
   return (
     <div className="content">
-      {/* Score header */}
-      <div className="card" style={{background:`linear-gradient(135deg,${playerColor},${playerColor}bb)`,color:'white',padding:16}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div style={{textAlign:'center'}}>
-            <div style={{fontSize:11,opacity:0.8}}>👩 {state.p1}</div>
-            <div style={{fontSize:28,fontWeight:700}}>{scores[1]}</div>
-          </div>
-          <div style={{textAlign:'center'}}>
-            <div style={{fontSize:12,opacity:0.8}}>문제 {round+1}/{totalRounds}</div>
-            <div style={{fontSize:11,marginTop:4}}>{playerIcon} {player}의 차례</div>
-          </div>
-          <div style={{textAlign:'center'}}>
-            <div style={{fontSize:11,opacity:0.8}}>👨 {state.p2}</div>
-            <div style={{fontSize:28,fontWeight:700}}>{scores[2]}</div>
-          </div>
+      <div className={`quiz-scorebar${isP1?'':' plum'}`}>
+        <div className="quiz-score-block">
+          <div className="quiz-score-name">{state.p1}</div>
+          <div className="quiz-score-num">{scores[1]}</div>
+        </div>
+        <div className="quiz-mid">
+          <div>{round+1} / {ROUNDS}</div>
+          <div style={{marginTop:2}}>{isP1?state.p1:state.p2}의 차례</div>
+        </div>
+        <div className="quiz-score-block">
+          <div className="quiz-score-name">{state.p2}</div>
+          <div className="quiz-score-num">{scores[2]}</div>
         </div>
       </div>
 
-      {/* Question */}
-      <div className="card" style={{textAlign:'center',padding:24}}>
-        <div style={{fontSize:13,color:'#888',marginBottom:4}}>이 단어의 뜻은?</div>
-        <div className="quiz-question">{q?.word.kana}</div>
-        <div style={{fontSize:12,color:'#aaa'}}>{q?.word.romaji}</div>
+      <div className="quiz-q-card">
+        <div className="quiz-eyebrow">이 단어의 뜻은?</div>
+        <div className="quiz-kana">{q?.word.kana}</div>
+        <div className="quiz-romaji">{q?.word.romaji}</div>
       </div>
 
-      {/* Options */}
-      <div className="quiz-options">
+      <div className="quiz-grid">
         {q?.options.map((opt, i) => {
-          let cls = 'quiz-option';
+          let cls = 'quiz-opt';
           if (answered) {
             if (opt.kana === q.word.kana) cls += ' correct';
             else if (selected?.kana === opt.kana) cls += ' wrong';
           }
           return (
-            <button key={i} className={cls} onClick={() => handleAnswer(opt)} disabled={answered}>
+            <button key={i} className={cls} disabled={answered} onClick={() => handleAnswer(opt)}>
               {opt.korean}
             </button>
           );
@@ -803,129 +995,129 @@ function QuizTab({ state, setState, showToast }) {
   );
 }
 
-// ─── Hiragana Tab ──────────────────────────────────────────────────────────
+/* ── Hiragana Tab ──────────────────────────────────────────────────────── */
 function HiraganaTab({ state, setState, showToast }) {
-  const learnedSet = new Set(state.hiragana || []);
+  const learned = new Set(state.hiragana||[]);
+  const total = HIRAGANA.filter(h=>h.char).length;
+  const pct = Math.round(learned.size / total * 100);
 
   const toggle = (char) => {
     if (!char) return;
-    const current = new Set(state.hiragana || []);
-    if (current.has(char)) current.delete(char);
-    else { current.add(char); showToast(`${char} 완료! 🌸`); }
-    setState({ ...state, hiragana: [...current] });
+    const s = new Set(state.hiragana||[]);
+    if (s.has(char)) s.delete(char);
+    else { s.add(char); showToast(`${char} ✓`); }
+    setState({...state, hiragana:[...s]});
   };
-
-  const pct = Math.round((learnedSet.size / HIRAGANA.filter(h=>h.char).length) * 100);
 
   return (
     <div className="content">
-      <div className="section-title">히라가나 학습 あ</div>
+      <div className="section-title">히라가나</div>
 
-      <div className="card" style={{marginBottom:14}}>
-        <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
-          <span style={{fontSize:13,fontWeight:600}}>학습 진도</span>
-          <span style={{fontSize:13,color:'#ff6987',fontWeight:600}}>{pct}%</span>
+      <div className="card" style={{marginBottom:12}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
+          <span style={{fontSize:14,fontWeight:600}}>학습 진도</span>
+          <span style={{fontFamily:'Georgia,serif',fontSize:22,color:'var(--rose)'}}>{pct}%</span>
         </div>
-        <div className="progress-bar">
-          <div className="progress-fill" style={{width:`${pct}%`}}/>
+        <div className="prog-track">
+          <div className="prog-fill" style={{width:`${pct}%`}}/>
         </div>
-        <div style={{fontSize:12,color:'#888',marginTop:8}}>
-          {learnedSet.size} / {HIRAGANA.filter(h=>h.char).length} 글자 완료
+        <div style={{fontSize:12,color:'var(--ink-3)',marginTop:8,fontVariantNumeric:'tabular-nums'}}>
+          {learned.size} / {total} 글자 완료
         </div>
       </div>
 
       <div className="card">
-        <div style={{fontSize:13,color:'#666',marginBottom:12,lineHeight:1.5}}>
-          글자를 탭하면 외운 것으로 표시돼요! 파트너와 함께 하나씩 외워봐요 🌸
+        <div className="tip-text" style={{marginBottom:14}}>
+          글자를 탭하면 완료로 표시됩니다. 파트너와 번갈아 읽는 연습을 해보세요.
         </div>
         <div className="hira-grid">
           {HIRAGANA.map((h, i) => (
             h.char ? (
-              <div key={i} className={`hira-cell ${learnedSet.has(h.char)?'learned':''}`}
-                onClick={() => toggle(h.char)}>
-                <div className="hira-char">{h.char}</div>
-                <div className="hira-roma">{h.rom}</div>
+              <div key={i} className={`hira-cell${learned.has(h.char)?' learned':''}`} onClick={() => toggle(h.char)}>
+                <span className="hira-char">{h.char}</span>
+                <span className="hira-rom">{h.rom}</span>
               </div>
-            ) : <div key={i}/>
+            ) : <div key={i} />
           ))}
         </div>
       </div>
 
-      <div className="card" style={{background:'#fff9f0',border:'2px solid #ffe0c0'}}>
-        <div style={{fontSize:13,fontWeight:600,color:'#ff9f6b',marginBottom:6}}>✏️ 학습 팁</div>
-        <div style={{fontSize:12,color:'#666',lineHeight:1.6}}>
-          하루에 한 행(5글자)씩 외워보세요.<br/>
-          파트너에게 읽어달라고 하고 맞히는 연습을 해보세요!
+      <div className="tip-card" style={{marginTop:12}}>
+        <div className="tip-label">학습 팁</div>
+        <div className="tip-text">
+          하루 한 행(5글자)씩 외워보세요. 파트너에게 읽어달라고 하고 받아쓰기 연습을 하면 효과적이에요.
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Main App ──────────────────────────────────────────────────────────────
+/* ── Main App ──────────────────────────────────────────────────────────── */
 function App() {
   const [appState, setAppState] = useState(null);
   const [tab, setTab] = useState('home');
   const [toast, setToast] = useState('');
 
   useEffect(() => {
-    const saved = loadState();
-    if (saved?.p1 && saved?.p2) setAppState(saved);
+    const s = loadState();
+    if (s?.p1 && s?.p2) setAppState(s);
   }, []);
 
-  const updateState = useCallback((next) => {
-    setAppState(next);
-    saveState(next);
-  }, []);
+  const updateState = useCallback(next => { setAppState(next); saveState(next); }, []);
 
-  const showToast = (msg) => {
+  const showToast = msg => {
     setToast(msg);
     setTimeout(() => setToast(''), 1800);
   };
 
-  if (!appState?.p1) {
-    return <SetupScreen onComplete={(p1, p2) => {
-      const s = { p1, p2, streak: 1, learned: [], p1Learned: [], p2Learned: [], quizWins: 0, hiragana: [] };
-      updateState(s);
-    }} />;
-  }
+  if (!appState?.p1) return (
+    <SetupScreen onComplete={(p1, p2) => {
+      updateState({ p1, p2, streak:1, learned:[], p1Learned:[], p2Learned:[], quizWins:0, hiragana:[] });
+    }} />
+  );
 
   const tabs = [
-    { id: 'home', icon: '🏠', label: '홈' },
-    { id: 'vocab', icon: '📖', label: '어휘' },
-    { id: 'quiz', icon: '🏆', label: '퀴즈' },
-    { id: 'hiragana', icon: 'あ', label: '히라가나' },
+    { id:'home',     icon:'🏠', label:'홈' },
+    { id:'vocab',    icon:'📖', label:'어휘' },
+    { id:'quiz',     icon:'⚔️',  label:'퀴즈' },
+    { id:'hiragana', icon:'あ',  label:'히라가나' },
   ];
+
+  const HEADER_TITLES = {
+    home:     { main:'우리 둘이', accent:'일본어' },
+    vocab:    { main:'어휘', accent:'학습' },
+    quiz:     { main:'퀴즈', accent:'배틀' },
+    hiragana: { main:'히라가나', accent:'あ' },
+  };
+  const ht = HEADER_TITLES[tab];
 
   return (
     <div className="app">
       <Toast msg={toast} />
 
-      {/* Header */}
-      <div className="header">
+      <header className="header">
         <div>
-          <h1>
-            {tab === 'home' ? '우리 둘이 일본어 💑' :
-             tab === 'vocab' ? '어휘 학습 📖' :
-             tab === 'quiz' ? '퀴즈 배틀 🏆' : '히라가나 あ'}
-          </h1>
-          <div className="subtitle">{appState.p1} & {appState.p2}</div>
+          <div className="header-title">{ht.main} <span>{ht.accent}</span></div>
+          <div className="header-sub">{appState.p1} · {appState.p2}</div>
         </div>
-        <div className="heartbeat">🌸</div>
-      </div>
+        <div className="header-mark" style={{color:'var(--rose)'}}>
+          <svg width="18" height="18" viewBox="0 0 96 96" fill="none">
+            <circle cx="36" cy="48" r="28" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
+            <circle cx="60" cy="48" r="28" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
+          </svg>
+        </div>
+      </header>
 
-      {/* Content */}
-      {tab === 'home' && <HomeTab state={appState} setState={updateState} />}
-      {tab === 'vocab' && <VocabTab state={appState} setState={updateState} />}
-      {tab === 'quiz' && <QuizTab state={appState} setState={updateState} showToast={showToast} />}
-      {tab === 'hiragana' && <HiraganaTab state={appState} setState={updateState} showToast={showToast} />}
+      {tab==='home'     && <HomeTab     state={appState} setState={updateState} />}
+      {tab==='vocab'    && <VocabTab    state={appState} setState={updateState} />}
+      {tab==='quiz'     && <QuizTab     state={appState} setState={updateState} showToast={showToast} />}
+      {tab==='hiragana' && <HiraganaTab state={appState} setState={updateState} showToast={showToast} />}
 
-      {/* Bottom Navigation */}
       <nav className="nav">
         {tabs.map(t => (
-          <button key={t.id} className={`nav-btn ${tab===t.id?'active':''}`} onClick={() => setTab(t.id)}>
-            <span className="icon">{t.icon}</span>
-            <span>{t.label}</span>
+          <button key={t.id} className={`nav-btn${tab===t.id?' active':''}`} onClick={() => setTab(t.id)}>
+            <span className="nav-icon">{t.icon}</span>
+            <span className="nav-label">{t.label}</span>
           </button>
         ))}
       </nav>
