@@ -1,8 +1,11 @@
-const CACHE = 'jp-couple-v19';
+const CACHE = 'jp-couple-v20';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './icon-180.png',
+  './icon-192.png',
+  './icon-512.png',
   'https://unpkg.com/react@18/umd/react.development.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.development.js',
   'https://unpkg.com/@babel/standalone/babel.min.js',
