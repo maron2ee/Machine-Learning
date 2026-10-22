@@ -557,6 +557,38 @@
       background: var(--surface-2); border-color: var(--border);
     }
 
+    .listen-big {
+      width: 92px; height: 92px; border-radius: 50%;
+      font-size: 38px; line-height: 1; margin: 6px auto;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--rose-lt); border: 2px solid var(--rose);
+      transition: transform 0.14s;
+    }
+    .listen-big:active { transform: scale(0.92); }
+    .fc-front .listen-big {
+      background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4);
+    }
+
+    /* ── Sentence builder ───────────────────────────────────────────────── */
+    .ord-line {
+      min-height: 72px; border-radius: 14px; padding: 12px;
+      background: var(--surface-2); border: 1.5px dashed var(--border);
+      display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start;
+      margin-bottom: 14px;
+    }
+    .ord-line.ok { border-style: solid; border-color: var(--ok); background: var(--ok-lt); }
+    .ord-line.ng { border-style: solid; border-color: var(--err); background: var(--err-lt); }
+    .ord-bank { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+    .ord-chip {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 18px; padding: 9px 13px; border-radius: 10px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      color: var(--ink); transition: transform 0.12s;
+    }
+    .ord-chip:active { transform: scale(0.94); }
+    .ord-chip.placed { background: var(--rose); border-color: var(--rose); color: #fff; }
+    .ord-empty { font-size: 12px; color: var(--ink-3); align-self: center; margin: auto; }
+
     /* ── Direction chips & rows ─────────────────────────────────────────── */
     .dir-chip {
       display: inline-block; font-size: 9.5px; font-weight: 700;
@@ -992,9 +1024,11 @@ function makeNote(type, front, reading, back, extra) {
     type, front:(front||'').trim(), reading:(reading||'').trim(),
     back:(back||'').trim(), extra:(extra||'').trim(),
     box:1, ok:0, ng:0,
-    reps:0,   ivl:0, ease:2.5, lapses:0, due:0,
+    reps:0,   ivl:0,   ease:2.5, lapses:0,   due:0,
     r_reps:0, r_ivl:0, r_ease:2.5, r_lapses:0, r_due:0,
     p_reps:0, p_ivl:0, p_ease:2.5, p_lapses:0, p_due:0,
+    c_reps:0, c_ivl:0, c_ease:2.5, c_lapses:0, c_due:0,
+    l_reps:0, l_ivl:0, l_ease:2.5, l_lapses:0, l_due:0,
   };
 }
 
@@ -1075,17 +1109,49 @@ function perDayLabel(v) { return v ? v + '장' : '제한 없음'; }
    produce it from Korean, so they are tracked separately. Each direction
    keeps its scheduling fields under its own field prefix on the same note. */
 const DIRS = {
-  mean:   { pre:'',   label:'뜻',     ask:'알맞은 뜻은?',        short:'일→뜻' },
-  read:   { pre:'r_', label:'읽기',   ask:'어떻게 읽을까요?',     short:'한자→읽기' },
-  recall: { pre:'p_', label:'일본어', ask:'일본어로는?',          short:'뜻→일본어' },
+  mean:   { pre:'',   label:'뜻',     ask:'알맞은 뜻은?',          short:'일→뜻' },
+  read:   { pre:'r_', label:'읽기',   ask:'어떻게 읽을까요?',       short:'한자→읽기' },
+  recall: { pre:'p_', label:'일본어', ask:'일본어로는?',            short:'뜻→일본어' },
+  cloze:  { pre:'c_', label:'빈칸',   ask:'빈칸에 들어갈 말은?',     short:'빈칸 채우기' },
+  listen: { pre:'l_', label:'듣기',   ask:'들은 말의 뜻은?',        short:'듣고 맞히기' },
 };
-const DIR_KEYS = ['mean', 'read', 'recall'];
+const DIR_KEYS = ['mean', 'read', 'recall', 'cloze', 'listen'];
+
+/* Japanese has no spaces, so chunk where the script changes
+   (kanji run / katakana run / hiragana run / everything else).
+   Rough, but it lands on real word edges often enough to study with. */
+const JA_CHUNK = /[\u4e00-\u9faf\u3400-\u4dbf]+|[\u30a0-\u30ff\u30fc]+|[\u3040-\u309f]+|[^\u3040-\u30ff\u4e00-\u9faf\u3400-\u4dbf\s]+/g;
+function jaChunks(str) {
+  return ((str || '').match(JA_CHUNK) || []).map(x => x.trim()).filter(Boolean);
+}
+
+/* A cloze hides the longest content run — kanji, or katakana for loanwords.
+   Those carry the meaning, so blanking one actually tests something. */
+function clozeTarget(n) {
+  if (!n || (n.type !== 'convo' && n.type !== 'grammar')) return null;
+  /* ～ marks a grammar pattern, not a sentence — nothing to blank out of it */
+  if ((n.front || '').includes('～')) return null;
+  const runs = (n.front || '').match(/[\u4e00-\u9faf\u3400-\u4dbf]+|[\u30a0-\u30ff\u30fc]{2,}/g);
+  if (!runs || !runs.length) return null;
+  const best = runs.reduce((a, b) => (b.length >= a.length ? b : a));
+  /* a single kanji pulled out of the middle of a conjugation is not a word,
+     and there has to be real sentence left around the blank */
+  if (!best || best.length < 2) return null;
+  if ((n.front || '').length - best.length < 3) return null;
+  return best;
+}
+function clozeText(n) {
+  const t = clozeTarget(n);
+  return t ? (n.front || '').replace(t, '＿＿＿') : '';
+}
 
 function hasKanji(str) { return /[一-龯㐀-䶿]/.test(str || ''); }
 /* grammar cards keep 접속·활용 in `reading`, not a reading — skip those */
 function readable(n) { return n.type !== 'grammar' && !!n.reading && hasKanji(n.front); }
 function dirApplies(n, dir) {
-  if (dir === 'read') return readable(n);
+  if (dir === 'read')   return readable(n);
+  if (dir === 'cloze')  return !!clozeTarget(n);
+  if (dir === 'listen') return !!speakTextOf(n);
   return true;
 }
 
@@ -1097,8 +1163,18 @@ function sset(n, dir, patch) {
 }
 
 /* what the card shows and what counts as the answer, per direction */
-function qText(n, dir) { return dir === 'recall' ? n.back : n.front; }
-function aText(n, dir) { return dir === 'read' ? n.reading : dir === 'recall' ? n.front : n.back; }
+function qText(n, dir) {
+  if (dir === 'recall') return n.back;
+  if (dir === 'cloze')  return clozeText(n);
+  if (dir === 'listen') return '🔊';
+  return n.front;
+}
+function aText(n, dir) {
+  if (dir === 'read')   return n.reading;
+  if (dir === 'recall') return n.front;
+  if (dir === 'cloze')  return clozeTarget(n) || '';
+  return n.back;                 /* mean, listen */
+}
 
 /* grade: 0 다시 · 1 어려움 · 2 보통 · 3 쉬움 */
 function schedule(n, grade, dir) {
@@ -1190,6 +1266,9 @@ function modeFor(n, dir) {
   if (dir !== 'mean') return 'choice';
   return r < 4 ? 'choice' : 'type';
 }
+
+/* speakTextOf is defined with the speech helpers further down, but
+   dirApplies needs it, and function declarations hoist. */
 
 /* Weakest cards first, so review time goes where it is needed */
 function studyOrder(notes) {
@@ -1544,6 +1623,7 @@ const REVIEW_MODES = [
   { id:'choice', emoji:'🎯', name:'4지선다',     desc:'보기 중에서 고르기',                min:4 },
   { id:'type',   emoji:'⌨️', name:'받아쓰기',    desc:'뜻을 직접 입력해서 확인하기',        min:1 },
   { id:'match',  emoji:'🔗', name:'짝 맞추기',   desc:'양쪽을 연결하는 미니게임',           min:3 },
+  { id:'order',  emoji:'🧩', name:'문장 조립',   desc:'조각을 순서대로 눌러 문장 만들기',     min:1 },
   { id:'couple', emoji:'💑', name:'커플 대결',   desc:'둘이 번갈아 풀고 점수 대결',         min:4 },
 ];
 
@@ -2392,7 +2472,7 @@ const DECK_INDEX = (() => {
   return m;
 })();
 function backfillDecks(notes) {
-  if (!notes || !notes.some(n => n.deck === undefined || n.lv === undefined || n.reps === undefined || n.r_reps === undefined)) return notes;
+  if (!notes || !notes.some(n => n.deck === undefined || n.lv === undefined || n.c_reps === undefined || n.l_reps === undefined)) return notes;
   return notes.map(n => {
     const next = { ...n };
     if (next.deck === undefined) next.deck = DECK_INDEX[deckKey(n.type, n.front, n.extra)] || '';
@@ -2407,10 +2487,13 @@ function backfillDecks(notes) {
       next.lapses = 0;
       next.due    = next.reps ? Date.now() : 0;
     }
-    if (next.r_reps === undefined) {
-      next.r_reps = 0; next.r_ivl = 0; next.r_ease = 2.5; next.r_lapses = 0; next.r_due = 0;
-      next.p_reps = 0; next.p_ivl = 0; next.p_ease = 2.5; next.p_lapses = 0; next.p_due = 0;
-    }
+    DIR_KEYS.forEach(d => {
+      const pre = DIRS[d].pre;
+      if (next[pre + 'reps'] === undefined) {
+        next[pre + 'reps'] = 0; next[pre + 'ivl'] = 0;
+        next[pre + 'ease'] = 2.5; next[pre + 'lapses'] = 0; next[pre + 'due'] = 0;
+      }
+    });
     return next;
   });
 }
@@ -2610,6 +2693,91 @@ function ReviewMatch({ pool, grade, onFinish, onBack, dir = 'mean' }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Mode: 문장 조립 ───────────────────────────────────────────────────── */
+function orderable(n) {
+  /* real sentences only — a grammar pattern like ～か～か has no word order */
+  if (n.type !== 'convo') return false;
+  const f = n.front || '';
+  if (f.includes('～') || f.length < 6) return false;
+  const chunks = jaChunks(f);
+  if (chunks.length < 4 || chunks.length > 9) return false;
+  /* needs at least two content chunks, or it is just ない。ない！ */
+  return chunks.filter(c => /[\u4e00-\u9faf\u3400-\u4dbf\u30a0-\u30ff]/.test(c)).length >= 2;
+}
+
+function ReviewOrder({ pool, grade, onFinish, onBack, dir = 'mean' }) {
+  const [queue] = useState(() => studyOrder(pool.filter(orderable)).slice(0, 10));
+  const [i, setI] = useState(0);
+  const [placed, setPlaced] = useState([]);
+  const [verdict, setVerdict] = useState(null);
+  const [right, setRight] = useState(0);
+  const timer = useTimeoutRef();
+
+  const n = queue[i];
+  /* chunks tagged with their position, so repeats stay distinguishable */
+  const parts = useMemo(() => n ? jaChunks(n.front).map((t, k) => ({ t, k })) : [], [n && n.id]);
+  const bank = useMemo(() => shuffle(parts), [parts]);
+  if (!n) return null;
+
+  const left = bank.filter(b => !placed.some(x => x.k === b.k));
+  const built = placed.map(x => x.t).join('');
+
+  const place = (chip) => {
+    if (verdict) return;
+    const next = [...placed, chip];
+    setPlaced(next);
+    if (next.length < parts.length) return;
+    const ok = next.map(x => x.t).join('') === parts.map(x => x.t).join('');
+    setVerdict(ok);
+    grade(n.id, ok, dir);
+    const r = right + (ok ? 1 : 0);
+    timer.current = setTimeout(() => {
+      if (i + 1 >= queue.length) { onFinish({ right:r, total:queue.length }); return; }
+      setRight(r); setI(i + 1); setPlaced([]); setVerdict(null);
+    }, ok ? 1100 : 2200);
+  };
+  const unplace = (chip) => { if (!verdict) setPlaced(placed.filter(x => x.k !== chip.k)); };
+
+  return (
+    <div className="content">
+      <div className="rv-bar">
+        <button className="btn btn-ghost btn-sm" onClick={onBack}>← 그만</button>
+        <span className="fc-count">{i + 1} / {queue.length}</span>
+      </div>
+
+      <div className="quiz-q-card" style={{padding:'20px 18px'}}>
+        <div className="quiz-eyebrow">이 뜻이 되도록 순서를 맞춰보세요</div>
+        <div style={{fontSize:17, fontWeight:700, color:'var(--ink)', lineHeight:1.5}}>{n.back}</div>
+        {n.extra && <div className="rv-sub">{n.extra}</div>}
+      </div>
+
+      <div className={`ord-line${verdict === true ? ' ok' : verdict === false ? ' ng' : ''}`}>
+        {placed.length
+          ? placed.map(c => (
+              <button key={c.k} className="ord-chip placed" onClick={() => unplace(c)}>{c.t}</button>
+            ))
+          : <span className="ord-empty">아래에서 하나씩 눌러 문장을 만들어요</span>}
+      </div>
+
+      {verdict === null ? (
+        <div className="ord-bank">
+          {left.map(c => (
+            <button key={c.k} className="ord-chip" onClick={() => place(c)}>{c.t}</button>
+          ))}
+        </div>
+      ) : (
+        <div className={`ans-box ${verdict ? 'ok' : 'ng'}`}>
+          <div className="ans-label">{verdict ? '정답이에요' : '정답은'}</div>
+          <div className="ans-val">{n.front}</div>
+          {n.reading && <div style={{fontSize:12, marginTop:6, opacity:0.8}}>{n.reading}</div>}
+          {!verdict && <div style={{fontSize:12, marginTop:4, opacity:0.8}}>만든 문장: {built}</div>}
+          <SpeakBtn note={n} />
+        </div>
+      )}
     </div>
   );
 }
@@ -2989,6 +3157,8 @@ function NotesTab({ state, setState, showToast }) {
   if (view === 'review') {
     if (mode === 'match')
       return <ReviewMatch key={runId} pool={pool} dir={dir} grade={grade} onFinish={finish} onBack={home} />;
+    if (mode === 'order')
+      return <ReviewOrder key={runId} pool={pool} dir={dir} grade={grade} onFinish={finish} onBack={home} />;
     if (mode === 'couple')
       return <ReviewCouple key={runId} pool={pool} dir={dir} state={state} grade={grade} onBack={home} />;
     return (
@@ -3073,16 +3243,18 @@ function NotesTab({ state, setState, showToast }) {
       )}
 
       <div className="section-title" style={{marginTop:16}}>어느 방향으로</div>
-      <div className="toggle-wrap three">
+      <div className="tabs" style={{marginBottom:10}}>
         {DIR_KEYS.map(d => (
-          <button key={d} className={`toggle-btn${dir === d ? ' active' : ''}`}
+          <button key={d} className={`tab${dir === d ? ' active' : ''}`}
             onClick={() => setDir(d)}>{DIRS[d].label}</button>
         ))}
       </div>
       <div className="tip-text" style={{marginTop:-8, marginBottom:16}}>
         {dir === 'mean' ? '일본어를 보고 뜻을 맞혀요.'
          : dir === 'read' ? '한자를 히라가나로 읽어요. 한자가 든 카드만 나옵니다.'
-         : '한국어 뜻을 보고 일본어를 골라요.'}
+         : dir === 'recall' ? '한국어 뜻을 보고 일본어를 골라요.'
+         : dir === 'cloze' ? '문장에서 핵심 단어를 가리고 맞혀요. 두 글자 이상인 말만 가립니다.'
+         : '소리만 듣고 뜻을 맞혀요. 한자 단독 카드는 빠집니다.'}
       </div>
 
       <div className="section-title">
@@ -3090,7 +3262,10 @@ function NotesTab({ state, setState, showToast }) {
         {pool.length > MANUAL_SESSION && ` · 한 번에 ${MANUAL_SESSION}장씩`}
       </div>
       {REVIEW_MODES.map(m => {
-        const off = pool.length < m.min || (m.id === 'type' && dir !== 'mean');
+        const orderable_n = m.id === 'order' ? pool.filter(orderable).length : 0;
+        const off = pool.length < m.min
+          || (m.id === 'type' && dir !== 'mean')
+          || (m.id === 'order' && orderable_n < 1);
         return (
           <button key={m.id} className="mode-row" disabled={off} onClick={() => start(m.id)}>
             <span className="mode-emoji">{m.emoji}</span>
@@ -3098,6 +3273,8 @@ function NotesTab({ state, setState, showToast }) {
               <span className="mode-name" style={{display:'block'}}>{m.name}</span>
               <span className="mode-desc" style={{display:'block'}}>
                 {m.id === 'type' && dir !== 'mean' ? '뜻 방향에서만 쓸 수 있어요'
+                 : m.id === 'order' && orderable_n < 1 ? '조립할 회화 문장이 없어요'
+                 : m.id === 'order' ? `${m.desc} · ${orderable_n}문장`
                  : pool.length < m.min ? `${m.min}장 이상 필요해요` : m.desc}
               </span>
             </span>
@@ -3182,6 +3359,11 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
     return shuffle([n, ...shuffle(others).slice(0, 3)]);
   }, [e && n.id, dir, mode]);
 
+  /* a listening card plays itself as soon as it comes up */
+  useEffect(() => {
+    if (e && dir === 'listen') speakJa(speakTextOf(n));
+  }, [e && n.id, dir]);
+
   if (!e) return null;
 
   const advance = (grade) => {
@@ -3214,6 +3396,9 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
   const question = qText(n, dir);
   const answer = aText(n, dir);
   const big = question.length > 10 ? ' sm' : '';
+  const isListen = dir === 'listen';
+  /* the Japanese is the answer on these, so it must not show in the question */
+  const hideJaOnQ = isListen || dir === 'recall';
 
   const header = (
     <div className="rv-bar">
@@ -3235,16 +3420,23 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
           <div className={`fc${revealed ? ' flipped' : ''}`} key={n.id + dir}>
             <div className="fc-face fc-front">
               <div className="fc-hint">{seen ? '탭하면 다시 뒤집혀요' : DIRS[dir].ask}</div>
-              <div className="fc-kana" style={{fontSize: question.length > 8 ? 26 : 50}}>{question}</div>
+              {isListen ? (
+                <button className="listen-big" onClick={ev => { ev.stopPropagation(); speakJa(speakTextOf(n)); }}>🔊</button>
+              ) : (
+                <div className="fc-kana" style={{fontSize: question.length > 8 ? 26 : 50}}>{question}</div>
+              )}
               {showReadingOnQ && <div className="fc-tag">{n.reading}</div>}
-              {dir !== 'recall' && <SpeakBtn note={n} big />}
+              {!hideJaOnQ && <SpeakBtn note={n} big />}
             </div>
             <div className="fc-face fc-back">
               <div style={{fontSize: answer.length > 14 ? 17 : 22, fontWeight:700, padding:'0 18px', textAlign:'center'}}>{answer}</div>
               {dir !== 'read' && n.reading && <div className="fc-tag" style={{marginTop:8}}>{n.reading}</div>}
               {dir === 'recall' && <div className="fc-tag" style={{marginTop:4}}>{n.back}</div>}
+              {(isListen || dir === 'cloze') && (
+                <div className="fc-tag" style={{marginTop:6, padding:'0 20px', textAlign:'center'}}>{n.front}</div>
+              )}
               {n.extra && <div className="fc-tag" style={{marginTop:8, padding:'0 20px', textAlign:'center'}}>{n.extra}</div>}
-              {dir === 'recall' && <SpeakBtn note={n} big />}
+              {hideJaOnQ && <SpeakBtn note={n} big />}
             </div>
           </div>
         </div>
@@ -3264,13 +3456,17 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
         {header}
         <div className="quiz-q-card">
           <div className="quiz-eyebrow">{DIRS[dir].ask}</div>
-          <div className={`rv-q${big}`}>{question}</div>
+          {isListen ? (
+            <button className="listen-big" onClick={() => speakJa(speakTextOf(n))}>🔊</button>
+          ) : (
+            <div className={`rv-q${big}`}>{question}</div>
+          )}
           {showReadingOnQ && <div className="rv-sub">{n.reading}</div>}
-          {dir !== 'recall' && <SpeakBtn note={n} />}
+          {!hideJaOnQ && <SpeakBtn note={n} />}
         </div>
         <div className="quiz-grid">
           {opts.map(o => {
-            let cls = 'quiz-opt' + (dir === 'mean' ? '' : ' ja');
+            let cls = 'quiz-opt' + (dir === 'mean' || dir === 'listen' ? '' : ' ja');
             if (sel) {
               if (o.id === n.id) cls += ' correct';
               else if (sel.id === o.id) cls += ' wrong';
