@@ -1,4 +1,4 @@
-const CACHE = 'jp-couple-v14';
+const CACHE = 'jp-couple-v15';
 const ASSETS = [
   './',
   './index.html',
