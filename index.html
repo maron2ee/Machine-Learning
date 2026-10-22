@@ -514,9 +514,134 @@
     .result-score-num.plum { color: var(--plum); }
     .result-vs-sep { font-size: 18px; color: var(--border); font-weight: 700; }
 
+    /* ── Notes: type cards ──────────────────────────────────────────────── */
+    .nt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .nt-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 15px 14px; text-align: left; width: 100%;
+      transition: transform 0.16s, border-color 0.16s, background 0.16s;
+    }
+    .nt-card:active { transform: scale(0.97); }
+    .nt-card.on { border-color: var(--rose); background: var(--rose-lt); }
+    .nt-mark {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 21px; line-height: 1; color: var(--rose);
+      display: block; margin-bottom: 7px;
+    }
+    .nt-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+    .nt-count { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+    .scope-all {
+      width: 100%; padding: 11px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 13px; font-weight: 600; color: var(--ink-3);
+      margin-bottom: 18px; transition: all 0.18s;
+    }
+    .scope-all.on { background: var(--rose-lt); border-color: var(--rose); color: var(--rose); }
+
+    /* ── Notes: review mode list ────────────────────────────────────────── */
+    .mode-row {
+      display: flex; align-items: center; gap: 13px; width: 100%;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 15px; margin-bottom: 8px; text-align: left;
+      transition: transform 0.15s;
+    }
+    .mode-row:active { transform: scale(0.98); }
+    .mode-row:disabled { opacity: 0.4; pointer-events: none; }
+    .mode-emoji { font-size: 21px; line-height: 1; flex-shrink: 0; width: 26px; text-align: center; }
+    .mode-name { font-size: 15px; font-weight: 700; color: var(--ink); }
+    .mode-desc { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; line-height: 1.4; }
+    .mode-arrow { margin-left: auto; color: var(--ink-3); font-size: 15px; flex-shrink: 0; }
+
+    /* ── Notes: input ───────────────────────────────────────────────────── */
+    .ta {
+      width: 100%; background: var(--surface);
+      border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 13px 14px; font-size: 14px; color: var(--ink);
+      outline: none; resize: vertical; min-height: 132px; line-height: 1.65;
+      font-family: inherit; transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .ta::placeholder { color: var(--ink-3); }
+    .ta:focus { border-color: var(--rose); box-shadow: 0 0 0 3px var(--rose-lt); }
+    .file-btn {
+      display: block; width: 100%; text-align: center;
+      background: var(--surface-2); border: 1.5px dashed var(--border);
+      border-radius: 12px; padding: 15px; font-size: 13px;
+      color: var(--ink-2); font-weight: 600; margin-bottom: 10px;
+    }
+
+    /* ── Notes: list rows ───────────────────────────────────────────────── */
+    .note-li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 11px 0; border-bottom: 1px solid var(--border);
+    }
+    .note-li:last-child { border-bottom: none; }
+    .note-front {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 16px; color: var(--ink); line-height: 1.35;
+    }
+    .note-read { font-size: 11px; color: var(--ink-3); margin-top: 1px; }
+    .note-back { font-size: 13px; color: var(--ink-2); margin-top: 3px; line-height: 1.45; }
+    .note-del { color: var(--ink-3); font-size: 15px; padding: 2px 4px; flex-shrink: 0; margin-left: auto; }
+    .srs-dots { display: flex; gap: 3px; margin-top: 5px; }
+    .srs-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); }
+    .srs-dot.on { background: var(--rose); }
+
+    /* ── Notes: matching game ───────────────────────────────────────────── */
+    .match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .match-tile {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 13px 8px; min-height: 64px;
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.3;
+      transition: all 0.16s;
+    }
+    .match-tile.ja { font-family: Georgia, 'Hiragino Mincho ProN', serif; font-size: 16px; }
+    .match-tile.sel { border-color: var(--rose); background: var(--rose-lt); color: var(--rose); }
+    .match-tile.bad { border-color: var(--err); background: var(--err-lt); color: var(--err); }
+    .match-tile.done { opacity: 0.25; pointer-events: none; border-style: dashed; }
+
+    /* ── Notes: misc ────────────────────────────────────────────────────── */
+    .pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .stat-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 5px 11px;
+      font-size: 11.5px; color: var(--ink-2); font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .empty-wrap { text-align: center; padding: 30px 18px; }
+    .empty-ja {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 40px; color: var(--border); margin-bottom: 12px; line-height: 1;
+    }
+    .empty-text { font-size: 13px; color: var(--ink-3); line-height: 1.75; margin-bottom: 18px; }
+    .ans-box { text-align: center; padding: 16px; border-radius: 14px; margin-bottom: 10px; }
+    .ans-box.ok { background: var(--ok-lt); color: var(--ok); }
+    .ans-box.ng { background: var(--err-lt); color: var(--err); }
+    .ans-label { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; opacity: 0.75; }
+    .ans-val { font-size: 19px; font-weight: 700; margin-top: 5px; line-height: 1.35; }
+    .combo {
+      font-size: 11px; font-weight: 700; color: var(--rose);
+      letter-spacing: 0.4px;
+    }
+    .rv-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; gap: 10px;
+    }
+    .rv-q {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 34px; color: var(--ink); line-height: 1.3;
+      word-break: break-word;
+    }
+    .rv-q.sm { font-size: 24px; }
+    .rv-sub { font-size: 13px; color: var(--ink-3); margin-top: 7px; }
+
     /* ── Animations ─────────────────────────────────────────────────────── */
     @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
     .pulse { animation: pulse 2.5s ease-in-out infinite; display: inline-block; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+    .shake { animation: shake 0.3s; }
 
     @media (prefers-reduced-motion: reduce) {
       .fc { transition: none; }
@@ -528,7 +653,7 @@
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useCallback, useRef, useMemo } = React;
 
 /* ── Data ──────────────────────────────────────────────────────────────── */
 const HIRAGANA = [
@@ -702,6 +827,93 @@ function shuffle(arr) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/* ── My Notes: model ───────────────────────────────────────────────────── */
+const NOTE_TYPES = {
+  word:    { label:'단어', mark:'語', fields:['단어 (일본어)','읽기 (후리가나)','뜻 (한국어)','예문 · 메모'] },
+  kanji:   { label:'한자', mark:'漢', fields:['한자','음독 / 훈독','뜻','단어 예시'] },
+  convo:   { label:'회화', mark:'話', fields:['일본어 문장','읽기','한국어 뜻','상황 · 메모'] },
+  grammar: { label:'문법', mark:'文', fields:['문형','접속 · 활용','의미','예문'] },
+};
+const TYPE_KEYS = Object.keys(NOTE_TYPES);
+const MAX_BOX = 5;
+
+let _nseq = 0;
+function makeNote(type, front, reading, back, extra) {
+  return {
+    id: `${Date.now().toString(36)}${(_nseq++).toString(36)}${Math.random().toString(36).slice(2,6)}`,
+    type, front:(front||'').trim(), reading:(reading||'').trim(),
+    back:(back||'').trim(), extra:(extra||'').trim(),
+    box:1, ok:0, ng:0,
+  };
+}
+
+/* Parse pasted lines. Fields split on / | tab , ; or 2+ spaces.
+   2 fields → 앞/뜻, 3 → 앞/읽기/뜻, 4+ → 앞/읽기/뜻/메모 */
+function parseNoteText(text, type) {
+  const out = [];
+  (text||'').split(/\r?\n/).forEach(raw => {
+    const line = raw.trim();
+    if (!line || line.startsWith('#') || line.startsWith('//')) return;
+    const p = line.split(/\s*[\/|\t,;]\s*|\s{2,}/).map(s => s.trim()).filter(Boolean);
+    if (p.length < 2) return;
+    if (p.length === 2)      out.push(makeNote(type, p[0], '',   p[1], ''));
+    else                     out.push(makeNote(type, p[0], p[1], p[2], p.slice(3).join(' · ')));
+  });
+  return out;
+}
+
+/* ── Answer matching (forgiving) ───────────────────────────────────────── */
+function normAns(s) {
+  return (s||'').toLowerCase()
+    .replace(/[\s.,!?~・·\-—…"'’”“()[\]{}【】「」『』。、！？:;]/g, '');
+}
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({length:n+1}, (_,j) => j);
+  let cur  = new Array(n+1);
+  for (let i = 1; i <= m; i++) {
+    cur[0] = i;
+    for (let j = 1; j <= n; j++) {
+      cur[j] = Math.min(prev[j]+1, cur[j-1]+1, prev[j-1] + (a[i-1]===b[j-1] ? 0 : 1));
+    }
+    [prev, cur] = [cur, prev];
+  }
+  return prev[n];
+}
+function answerMatches(input, answer) {
+  const a = normAns(input);
+  if (!a) return false;
+  // accept any alternative separated by / , · or 또는
+  const alts = String(answer||'').split(/[\/,·]|또는/).map(normAns).filter(Boolean);
+  if (!alts.length) return false;
+  return alts.some(b => {
+    if (a === b) return true;
+    const short = Math.min(a.length, b.length), long = Math.max(a.length, b.length);
+    // one contains the other, and the shorter side still carries most of the answer
+    if (b.length >= 2 && (b.includes(a) || a.includes(b))
+        && short >= Math.max(2, Math.ceil(long * 0.5))) return true;
+    // allow a single typo once the answer is long enough to afford one
+    const tol = Math.max(long >= 4 ? 1 : 0, Math.floor(long * 0.25));
+    return levenshtein(a, b) <= tol;
+  });
+}
+
+/* ── SRS (Leitner) ─────────────────────────────────────────────────────── */
+function gradeNote(note, correct) {
+  return {
+    ...note,
+    box: correct ? Math.min(MAX_BOX, (note.box||1) + 1) : 1,
+    ok:  (note.ok||0) + (correct ? 1 : 0),
+    ng:  (note.ng||0) + (correct ? 0 : 1),
+  };
+}
+/* Weakest cards first, so review time goes where it is needed */
+function studyOrder(notes) {
+  return shuffle(notes).sort((x, y) => (x.box||1) - (y.box||1));
 }
 function loadState() { try { return JSON.parse(localStorage.getItem('jpCouple')||'null'); } catch { return null; } }
 function saveState(s) { localStorage.setItem('jpCouple', JSON.stringify(s)); }
@@ -1166,6 +1378,696 @@ function KanaTab({ state, setState, showToast }) {
   );
 }
 
+/* ── My Notes: review modes ────────────────────────────────────────────── */
+const REVIEW_MODES = [
+  { id:'flash',  emoji:'📇', name:'플래시카드',   desc:'뒤집어 보며 외우기 · 약한 카드부터', min:1 },
+  { id:'choice', emoji:'🎯', name:'4지선다 퀴즈', desc:'보기 중에서 알맞은 뜻 고르기',      min:4 },
+  { id:'type',   emoji:'⌨️', name:'받아쓰기',     desc:'뜻을 직접 입력해서 확인하기',        min:1 },
+  { id:'match',  emoji:'🔗', name:'짝 맞추기',    desc:'일본어와 뜻을 연결하는 미니게임',    min:3 },
+  { id:'couple', emoji:'💑', name:'커플 대결',    desc:'둘이 번갈아 풀고 점수 대결',        min:4 },
+];
+
+function sampleNotes() {
+  return [
+    makeNote('word','勉強','べんきょう','공부','毎日 勉強します'),
+    makeNote('word','約束','やくそく','약속','約束を守る'),
+    makeNote('word','大切','たいせつ','소중함','大切な人'),
+    makeNote('word','一緒','いっしょ','함께','一緒に行こう'),
+    makeNote('kanji','愛','アイ / あい-する','사랑 애','愛情(あいじょう) 애정'),
+    makeNote('kanji','結','ケツ / むす-ぶ','맺을 결','結婚(けっこん) 결혼'),
+    makeNote('kanji','毎','マイ','매양 매','毎日(まいにち) 매일'),
+    makeNote('convo','お元気ですか','おげんきですか','잘 지내세요?','오랜만에 만났을 때'),
+    makeNote('convo','少し待ってください','すこしまってください','조금만 기다려 주세요',''),
+    makeNote('grammar','〜ましょう','동사 ます형 + ましょう','~합시다 (권유)','一緒に行きましょう 같이 갑시다'),
+    makeNote('grammar','〜たい','동사 ます형 + たい','~하고 싶다','日本へ行きたい 일본에 가고 싶다'),
+    makeNote('grammar','〜てもいい','동사 て형 + もいい','~해도 된다','入ってもいいですか 들어가도 될까요'),
+  ];
+}
+
+function useTimeoutRef() {
+  const ref = useRef(null);
+  useEffect(() => () => clearTimeout(ref.current), []);
+  return ref;
+}
+
+function SrsDots({ box }) {
+  return (
+    <div className="srs-dots">
+      {Array.from({length:MAX_BOX}, (_, k) => (
+        <span key={k} className={`srs-dot${k < (box||1) ? ' on' : ''}`} />
+      ))}
+    </div>
+  );
+}
+
+function BackBar({ onBack, right }) {
+  return (
+    <div className="rv-bar">
+      <button className="btn btn-ghost btn-sm" onClick={onBack}>← 뒤로</button>
+      {right}
+    </div>
+  );
+}
+
+/* ── Mode: 플래시카드 ──────────────────────────────────────────────────── */
+function ReviewFlash({ pool, grade, onFinish, onBack }) {
+  const [queue] = useState(() => studyOrder(pool));
+  const [i, setI] = useState(0);
+  const [flip, setFlip] = useState(false);
+  const [right, setRight] = useState(0);
+  const n = queue[i];
+  if (!n) return null;
+
+  const answer = (ok) => {
+    grade(n.id, ok);
+    const r = right + (ok ? 1 : 0);
+    if (i + 1 >= queue.length) onFinish({ right:r, total:queue.length });
+    else { setRight(r); setI(i + 1); setFlip(false); }
+  };
+
+  return (
+    <div className="content">
+      <BackBar onBack={onBack} right={<span className="fc-count">{i+1} / {queue.length}</span>} />
+      <div className="prog-track" style={{marginBottom:14}}>
+        <div className="prog-fill" style={{width:`${(i/queue.length)*100}%`}} />
+      </div>
+
+      <div className="fc-wrap" onClick={() => setFlip(f => !f)}>
+        <div className={`fc${flip ? ' flipped' : ''}`}>
+          <div className="fc-face fc-front">
+            <div className="fc-hint">탭하면 뒤집어요</div>
+            <div className="fc-kana" style={{fontSize: n.front.length > 8 ? 28 : 52}}>{n.front}</div>
+            {n.reading && <div className="fc-tag">{n.reading}</div>}
+          </div>
+          <div className="fc-face fc-back">
+            <div className="fc-meaning" style={{fontSize: n.back.length > 14 ? 17 : 22, fontWeight:700, padding:'0 18px', textAlign:'center'}}>{n.back}</div>
+            {n.extra && <div className="fc-tag" style={{marginTop:10, padding:'0 20px', textAlign:'center'}}>{n.extra}</div>}
+          </div>
+        </div>
+      </div>
+
+      {flip ? (
+        <div style={{display:'flex', gap:8}}>
+          <button className="btn btn-ghost" style={{flex:1, padding:14}} onClick={() => answer(false)}>아직이에요</button>
+          <button className="btn btn-ghost-rose" style={{flex:1, padding:14}} onClick={() => answer(true)}>알아요 ✓</button>
+        </div>
+      ) : (
+        <div className="tip-card" style={{textAlign:'center'}}>
+          <div className="tip-text">먼저 뜻을 떠올려 본 다음 카드를 뒤집어 보세요.</div>
+        </div>
+      )}
+
+      <div style={{marginTop:12, display:'flex', justifyContent:'center'}}>
+        <SrsDots box={n.box} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Mode: 4지선다 ─────────────────────────────────────────────────────── */
+function ReviewChoice({ pool, grade, onFinish, onBack }) {
+  const [queue] = useState(() => studyOrder(pool).slice(0, Math.min(10, pool.length)));
+  const [i, setI] = useState(0);
+  const [sel, setSel] = useState(null);
+  const [right, setRight] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const timer = useTimeoutRef();
+  const n = queue[i];
+
+  const opts = useMemo(() => {
+    if (!n) return [];
+    const others = shuffle(pool.filter(x => x.id !== n.id && normAns(x.back) !== normAns(n.back))).slice(0, 3);
+    return shuffle([n, ...others]);
+  }, [n && n.id]);
+
+  if (!n) return null;
+
+  const pick = (o) => {
+    if (sel) return;
+    const ok = o.id === n.id;
+    setSel(o);
+    grade(n.id, ok);
+    const r = right + (ok ? 1 : 0);
+    setCombo(ok ? combo + 1 : 0);
+    timer.current = setTimeout(() => {
+      if (i + 1 >= queue.length) onFinish({ right:r, total:queue.length });
+      else { setRight(r); setI(i + 1); setSel(null); }
+    }, 850);
+  };
+
+  return (
+    <div className="content">
+      <BackBar onBack={onBack} right={
+        <span className="fc-count">
+          {combo >= 2 && <span className="combo">{combo}연속 🔥 </span>}
+          {i+1} / {queue.length}
+        </span>
+      } />
+      <div className="prog-track" style={{marginBottom:14}}>
+        <div className="prog-fill" style={{width:`${(i/queue.length)*100}%`}} />
+      </div>
+
+      <div className="quiz-q-card">
+        <div className="quiz-eyebrow">{NOTE_TYPES[n.type].label} · 알맞은 뜻은?</div>
+        <div className={`rv-q${n.front.length > 10 ? ' sm' : ''}`}>{n.front}</div>
+        {n.reading && <div className="rv-sub">{n.reading}</div>}
+      </div>
+
+      <div className="quiz-grid">
+        {opts.map(o => {
+          let cls = 'quiz-opt';
+          if (sel) {
+            if (o.id === n.id) cls += ' correct';
+            else if (sel.id === o.id) cls += ' wrong';
+          }
+          return (
+            <button key={o.id} className={cls} disabled={!!sel} onClick={() => pick(o)}>
+              {o.back}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Mode: 받아쓰기 ────────────────────────────────────────────────────── */
+function ReviewType({ pool, grade, onFinish, onBack }) {
+  const [queue] = useState(() => studyOrder(pool).slice(0, Math.min(10, pool.length)));
+  const [i, setI] = useState(0);
+  const [val, setVal] = useState('');
+  const [judged, setJudged] = useState(null); // null | true | false
+  const [right, setRight] = useState(0);
+  const n = queue[i];
+  if (!n) return null;
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (judged !== null || !val.trim()) return;
+    setJudged(answerMatches(val, n.back));
+  };
+
+  const advance = (override) => {
+    const ok = override === undefined ? judged : override;
+    grade(n.id, ok);
+    const r = right + (ok ? 1 : 0);
+    if (i + 1 >= queue.length) onFinish({ right:r, total:queue.length });
+    else { setRight(r); setI(i + 1); setVal(''); setJudged(null); }
+  };
+
+  return (
+    <div className="content">
+      <BackBar onBack={onBack} right={<span className="fc-count">{i+1} / {queue.length}</span>} />
+      <div className="prog-track" style={{marginBottom:14}}>
+        <div className="prog-fill" style={{width:`${(i/queue.length)*100}%`}} />
+      </div>
+
+      <div className="quiz-q-card">
+        <div className="quiz-eyebrow">{NOTE_TYPES[n.type].label} · 뜻을 입력하세요</div>
+        <div className={`rv-q${n.front.length > 10 ? ' sm' : ''}`}>{n.front}</div>
+        {n.reading && <div className="rv-sub">{n.reading}</div>}
+      </div>
+
+      {judged === null ? (
+        <form onSubmit={submit}>
+          <input className="field-input" value={val} autoFocus
+            placeholder="뜻을 한국어로 입력" onChange={e => setVal(e.target.value)} />
+          <button className="btn btn-primary" style={{marginTop:10}} type="submit" disabled={!val.trim()}>확인</button>
+        </form>
+      ) : (
+        <>
+          <div className={`ans-box ${judged ? 'ok' : 'ng'}`}>
+            <div className="ans-label">{judged ? '정답이에요' : '정답은'}</div>
+            <div className="ans-val">{n.back}</div>
+            {!judged && <div style={{fontSize:12, marginTop:6, opacity:0.8}}>입력: {val}</div>}
+          </div>
+          {n.extra && <div className="tip-card" style={{marginBottom:10}}>
+            <div className="tip-label">메모</div>
+            <div className="tip-text">{n.extra}</div>
+          </div>}
+          <button className="btn btn-primary" onClick={() => advance()}>
+            {i + 1 >= queue.length ? '결과 보기' : '다음 →'}
+          </button>
+          {!judged && (
+            <button className="btn btn-ghost" style={{width:'100%', marginTop:8, padding:12}}
+              onClick={() => advance(true)}>
+              사실 맞았어요 (정답 처리)
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── Mode: 짝 맞추기 ───────────────────────────────────────────────────── */
+function ReviewMatch({ pool, grade, onFinish, onBack }) {
+  const [pairs] = useState(() => studyOrder(pool).slice(0, Math.min(5, pool.length)));
+  const [ja] = useState(() => shuffle(pairs));
+  const [ko] = useState(() => shuffle(pairs));
+  const [selJa, setSelJa] = useState(null);
+  const [selKo, setSelKo] = useState(null);
+  const [done, setDone] = useState([]);
+  const [bad, setBad] = useState(false);
+  const [tries, setTries] = useState(0);
+  const [secs, setSecs] = useState(0);
+  const timer = useTimeoutRef();
+
+  useEffect(() => {
+    const t = setInterval(() => setSecs(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const resolve = (jId, kId) => {
+    setTries(t => t + 1);
+    if (jId === kId) {
+      grade(jId, true);
+      const nd = [...done, jId];
+      setDone(nd);
+      setSelJa(null); setSelKo(null);
+      if (nd.length >= pairs.length) {
+        timer.current = setTimeout(() => onFinish({ right:pairs.length, total:pairs.length, secs, tries:tries + 1 }), 500);
+      }
+    } else {
+      grade(jId, false);
+      setBad(true);
+      timer.current = setTimeout(() => { setBad(false); setSelJa(null); setSelKo(null); }, 550);
+    }
+  };
+
+  const tapJa = (id) => {
+    if (bad || done.includes(id)) return;
+    if (selKo) resolve(id, selKo); else setSelJa(selJa === id ? null : id);
+  };
+  const tapKo = (id) => {
+    if (bad || done.includes(id)) return;
+    if (selJa) resolve(selJa, id); else setSelKo(selKo === id ? null : id);
+  };
+
+  const cls = (id, sel) =>
+    'match-tile' + (done.includes(id) ? ' done' : '') +
+    (bad && sel === id ? ' bad shake' : (sel === id ? ' sel' : ''));
+
+  return (
+    <div className="content">
+      <BackBar onBack={onBack} right={
+        <span className="fc-count">{done.length} / {pairs.length} · {secs}초</span>
+      } />
+      <div className="tip-card" style={{marginBottom:12}}>
+        <div className="tip-text">왼쪽 일본어와 오른쪽 뜻을 하나씩 눌러 짝을 맞춰 보세요.</div>
+      </div>
+
+      <div style={{display:'flex', gap:7}}>
+        <div style={{flex:1, display:'flex', flexDirection:'column', gap:7}}>
+          {ja.map(n => (
+            <button key={n.id} className={cls(n.id, selJa) + ' ja'} onClick={() => tapJa(n.id)}>
+              {n.front}
+            </button>
+          ))}
+        </div>
+        <div style={{flex:1, display:'flex', flexDirection:'column', gap:7}}>
+          {ko.map(n => (
+            <button key={n.id} className={cls(n.id, selKo)} onClick={() => tapKo(n.id)}>
+              {n.back}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Mode: 커플 대결 ───────────────────────────────────────────────────── */
+function ReviewCouple({ pool, state, grade, onBack }) {
+  const [queue] = useState(() => studyOrder(pool).slice(0, Math.min(10, pool.length)));
+  const [i, setI] = useState(0);
+  const [player, setPlayer] = useState(1);
+  const [scores, setScores] = useState({1:0, 2:0});
+  const [sel, setSel] = useState(null);
+  const [phase, setPhase] = useState('play');
+  const timer = useTimeoutRef();
+  const n = queue[i];
+
+  const opts = useMemo(() => {
+    if (!n) return [];
+    const others = shuffle(pool.filter(x => x.id !== n.id && normAns(x.back) !== normAns(n.back))).slice(0, 3);
+    return shuffle([n, ...others]);
+  }, [n && n.id]);
+
+  if (phase === 'result') {
+    const win = scores[1] > scores[2] ? state.p1 : scores[2] > scores[1] ? state.p2 : null;
+    return (
+      <div className="content">
+        <div className="card" style={{textAlign:'center', padding:28}}>
+          <div className="empty-ja" style={{color:'var(--rose)'}}>{win ? '勝' : '引'}</div>
+          <div style={{fontSize:20, fontWeight:700, marginBottom:6}}>
+            {win ? `${win} 승리!` : '무승부!'}
+          </div>
+          <div style={{fontSize:13, color:'var(--ink-3)', marginBottom:22}}>
+            내 노트로 겨룬 {queue.length}문제
+          </div>
+          <div className="result-vs" style={{marginBottom:22}}>
+            <div className="result-score-block">
+              <div className="result-score-name">{state.p1}</div>
+              <div className="result-score-num">{scores[1]}</div>
+            </div>
+            <div className="result-vs-sep">VS</div>
+            <div className="result-score-block">
+              <div className="result-score-name">{state.p2}</div>
+              <div className="result-score-num plum">{scores[2]}</div>
+            </div>
+          </div>
+          <button className="btn btn-primary" onClick={onBack}>노트로 돌아가기</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!n) return null;
+
+  const pick = (o) => {
+    if (sel) return;
+    const ok = o.id === n.id;
+    setSel(o);
+    grade(n.id, ok);
+    const next = { ...scores, [player]: scores[player] + (ok ? 1 : 0) };
+    setScores(next);
+    timer.current = setTimeout(() => {
+      if (i + 1 >= queue.length) setPhase('result');
+      else { setI(i + 1); setPlayer(p => p === 1 ? 2 : 1); setSel(null); }
+    }, 850);
+  };
+
+  const isP1 = player === 1;
+  return (
+    <div className="content">
+      <BackBar onBack={onBack} right={<span className="fc-count">{i+1} / {queue.length}</span>} />
+
+      <div className={`quiz-scorebar${isP1 ? '' : ' plum'}`}>
+        <div className="quiz-score-block">
+          <div className="quiz-score-name">{state.p1}</div>
+          <div className="quiz-score-num">{scores[1]}</div>
+        </div>
+        <div className="quiz-mid">
+          {NOTE_TYPES[n.type].label}<br/>
+          <strong>{isP1 ? state.p1 : state.p2}</strong>의 차례
+        </div>
+        <div className="quiz-score-block">
+          <div className="quiz-score-name">{state.p2}</div>
+          <div className="quiz-score-num">{scores[2]}</div>
+        </div>
+      </div>
+
+      <div className="quiz-q-card">
+        <div className={`rv-q${n.front.length > 10 ? ' sm' : ''}`}>{n.front}</div>
+        {n.reading && <div className="rv-sub">{n.reading}</div>}
+      </div>
+
+      <div className="quiz-grid">
+        {opts.map(o => {
+          let cls = 'quiz-opt';
+          if (sel) {
+            if (o.id === n.id) cls += ' correct';
+            else if (sel.id === o.id) cls += ' wrong';
+          }
+          return (
+            <button key={o.id} className={cls} disabled={!!sel} onClick={() => pick(o)}>
+              {o.back}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Result screen ─────────────────────────────────────────────────────── */
+function ReviewResult({ result, onRetry, onHome }) {
+  const pct = result.total ? Math.round(result.right / result.total * 100) : 0;
+  const msg = pct === 100 ? '완벽해요! 다음 단계로 넘어가도 좋아요'
+            : pct >= 80  ? '좋아요! 거의 다 외웠어요'
+            : pct >= 50  ? '절반은 넘었어요. 한 번 더 돌려볼까요?'
+            :              '아직 낯선 카드가 많아요. 플래시카드로 먼저 익혀보세요';
+  return (
+    <div className="content">
+      <div className="card" style={{textAlign:'center', padding:30}}>
+        <div className="empty-ja" style={{color:'var(--rose)'}}>{pct === 100 ? '満' : '復'}</div>
+        <div style={{fontFamily:'Georgia,serif', fontSize:52, color:'var(--rose)', lineHeight:1}}>{pct}%</div>
+        <div style={{fontSize:14, color:'var(--ink-2)', marginTop:8, fontVariantNumeric:'tabular-nums'}}>
+          {result.total}문제 중 {result.right}개 정답
+          {result.secs !== undefined && ` · ${result.secs}초`}
+        </div>
+        <div style={{fontSize:13, color:'var(--ink-3)', margin:'16px 0 24px', lineHeight:1.6}}>{msg}</div>
+        <div style={{display:'flex', gap:8}}>
+          <button className="btn btn-ghost" style={{flex:1, padding:14}} onClick={onHome}>노트로</button>
+          <button className="btn btn-ghost-rose" style={{flex:1, padding:14}} onClick={onRetry}>한 번 더</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Add screen ────────────────────────────────────────────────────────── */
+function NotesAdd({ onAdd, onBack, showToast }) {
+  const [type, setType] = useState('word');
+  const [way, setWay] = useState('paste');
+  const [text, setText] = useState('');
+  const [f, setF] = useState(['','','','']);
+  const fileRef = useRef(null);
+
+  const preview = way === 'paste' ? parseNoteText(text, type) : [];
+
+  const onFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => setText(t => (t ? t + '\n' : '') + String(r.result || ''));
+    r.onerror = () => showToast('파일을 읽지 못했어요');
+    r.readAsText(file, 'utf-8');
+    e.target.value = '';
+  };
+
+  const addManual = () => {
+    if (!f[0].trim() || !f[2].trim()) { showToast('일본어와 뜻은 필수예요'); return; }
+    onAdd([makeNote(type, f[0], f[1], f[2], f[3])]);
+    setF(['','','','']);
+  };
+
+  const T = NOTE_TYPES[type];
+
+  return (
+    <div className="content">
+      <BackBar onBack={onBack} right={null} />
+
+      <div className="section-title">어떤 내용인가요</div>
+      <div className="tabs" style={{marginBottom:14}}>
+        {TYPE_KEYS.map(k => (
+          <button key={k} className={`tab${type === k ? ' active' : ''}`} onClick={() => setType(k)}>
+            <span style={{fontFamily:'Georgia,serif', marginRight:4}}>{NOTE_TYPES[k].mark}</span>
+            {NOTE_TYPES[k].label}
+          </button>
+        ))}
+      </div>
+
+      <div className="toggle-wrap">
+        <button className={`toggle-btn${way === 'paste' ? ' active' : ''}`} onClick={() => setWay('paste')}>붙여넣기</button>
+        <button className={`toggle-btn${way === 'one' ? ' active' : ''}`} onClick={() => setWay('one')}>하나씩 입력</button>
+      </div>
+
+      {way === 'paste' ? (
+        <>
+          <button className="file-btn" onClick={() => fileRef.current && fileRef.current.click()}>
+            📄 파일 불러오기 (.txt · .csv)
+          </button>
+          <input ref={fileRef} type="file" accept=".txt,.csv,.tsv,text/plain" style={{display:'none'}} onChange={onFile} />
+
+          <textarea className="ta" value={text} onChange={e => setText(e.target.value)}
+            placeholder={`勉強 / べんきょう / 공부\n約束 / やくそく / 약속\n大切 / たいせつ / 소중함`} />
+
+          <div className="tip-card" style={{margin:'10px 0'}}>
+            <div className="tip-label">입력 형식</div>
+            <div className="tip-text">
+              한 줄에 하나씩, <strong>/</strong> 또는 쉼표·탭으로 구분해요.<br/>
+              2칸이면 <em>{T.fields[0]} / {T.fields[2]}</em>,<br/>
+              3칸이면 <em>{T.fields[0]} / {T.fields[1]} / {T.fields[2]}</em>,<br/>
+              4칸이면 뒤에 <em>{T.fields[3]}</em>까지 들어가요.
+            </div>
+          </div>
+
+          <button className="btn btn-primary" disabled={!preview.length} onClick={() => { onAdd(preview); setText(''); }}>
+            {preview.length ? `${preview.length}개 노트에 추가` : '내용을 입력해 주세요'}
+          </button>
+        </>
+      ) : (
+        <>
+          {T.fields.map((lab, k) => (
+            <div className="field-group" key={k}>
+              <label className="field-label">{lab}{(k === 0 || k === 2) ? ' *' : ''}</label>
+              <input className="field-input" value={f[k]}
+                onChange={e => setF(v => v.map((x, j) => j === k ? e.target.value : x))} />
+            </div>
+          ))}
+          <button className="btn btn-primary" onClick={addManual}>노트에 추가</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── Manage screen ─────────────────────────────────────────────────────── */
+function NotesManage({ notes, onDel, onBack }) {
+  const [type, setType] = useState('all');
+  const list = type === 'all' ? notes : notes.filter(n => n.type === type);
+
+  return (
+    <div className="content">
+      <BackBar onBack={onBack} right={<span className="fc-count">{list.length}장</span>} />
+
+      <div className="tabs" style={{marginBottom:14}}>
+        <button className={`tab${type === 'all' ? ' active' : ''}`} onClick={() => setType('all')}>전체</button>
+        {TYPE_KEYS.map(k => (
+          <button key={k} className={`tab${type === k ? ' active' : ''}`} onClick={() => setType(k)}>
+            {NOTE_TYPES[k].label} {notes.filter(n => n.type === k).length}
+          </button>
+        ))}
+      </div>
+
+      {list.length === 0 ? (
+        <div className="empty-wrap">
+          <div className="empty-ja">空</div>
+          <div className="empty-text">아직 저장된 내용이 없어요.</div>
+        </div>
+      ) : (
+        <div className="card">
+          {list.map(n => (
+            <div className="note-li" key={n.id}>
+              <div style={{minWidth:0, flex:1}}>
+                <div className="note-front">{n.front}</div>
+                {n.reading && <div className="note-read">{n.reading}</div>}
+                <div className="note-back">{n.back}</div>
+                {n.extra && <div className="note-read" style={{marginTop:3}}>{n.extra}</div>}
+                <SrsDots box={n.box} />
+              </div>
+              <button className="note-del" onClick={() => onDel(n.id)} aria-label="삭제">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Notes tab (router) ────────────────────────────────────────────────── */
+function NotesTab({ state, setState, showToast }) {
+  const [view, setView] = useState('home');
+  const [mode, setMode] = useState(null);
+  const [scope, setScope] = useState('all');
+  const [result, setResult] = useState(null);
+  const [runId, setRunId] = useState(0);
+
+  const notes = state.notes || [];
+  const pool = scope === 'all' ? notes : notes.filter(n => n.type === scope);
+
+  const addNotes = (list) => {
+    if (!list || !list.length) { showToast('추가할 내용이 없어요'); return; }
+    setState({ ...state, notes: [...notes, ...list] });
+    showToast(`${list.length}개 추가 ✓`);
+  };
+  const delNote = (id) => setState({ ...state, notes: notes.filter(n => n.id !== id) });
+  const grade = (id, correct) =>
+    setState({ ...state, notes: notes.map(n => n.id === id ? gradeNote(n, correct) : n) });
+
+  const start = (m) => { setMode(m); setResult(null); setRunId(r => r + 1); setView('review'); };
+  const home = () => { setView('home'); setMode(null); setResult(null); };
+  const finish = (r) => { setResult(r); setView('result'); };
+
+  if (view === 'add')    return <NotesAdd onAdd={addNotes} onBack={home} showToast={showToast} />;
+  if (view === 'manage') return <NotesManage notes={notes} onDel={delNote} onBack={home} />;
+  if (view === 'result') return <ReviewResult result={result} onHome={home} onRetry={() => start(mode)} />;
+
+  if (view === 'review') {
+    const p = { key:runId, pool, grade, onFinish:finish, onBack:home };
+    if (mode === 'flash')  return <ReviewFlash  {...p} />;
+    if (mode === 'choice') return <ReviewChoice {...p} />;
+    if (mode === 'type')   return <ReviewType   {...p} />;
+    if (mode === 'match')  return <ReviewMatch  {...p} />;
+    if (mode === 'couple') return <ReviewCouple key={runId} pool={pool} state={state} grade={grade} onBack={home} />;
+  }
+
+  /* ── home ── */
+  if (!notes.length) {
+    return (
+      <div className="content">
+        <div className="card">
+          <div className="empty-wrap">
+            <div className="empty-ja">筆</div>
+            <div className="empty-text">
+              배운 단어 · 한자 · 회화 · 문법을 올려두면<br/>
+              5가지 방법으로 재미있게 복습할 수 있어요.
+            </div>
+            <button className="btn btn-primary" onClick={() => setView('add')}>내용 추가하기</button>
+            <button className="btn btn-ghost" style={{width:'100%', marginTop:8, padding:12}}
+              onClick={() => addNotes(sampleNotes())}>
+              샘플로 먼저 체험해보기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const weak = notes.filter(n => (n.box||1) < 3).length;
+  const mastered = notes.filter(n => (n.box||1) >= MAX_BOX).length;
+
+  return (
+    <div className="content">
+      <div className="pill-row">
+        <span className="stat-pill">📚 전체 {notes.length}장</span>
+        <span className="stat-pill">🔥 복습 필요 {weak}장</span>
+        <span className="stat-pill">⭐ 완성 {mastered}장</span>
+      </div>
+
+      <div className="section-title">무엇을 복습할까요</div>
+      <div className="nt-grid">
+        {TYPE_KEYS.map(k => {
+          const c = notes.filter(n => n.type === k).length;
+          return (
+            <button key={k} className={`nt-card${scope === k ? ' on' : ''}`}
+              onClick={() => setScope(scope === k ? 'all' : k)}>
+              <span className="nt-mark">{NOTE_TYPES[k].mark}</span>
+              <div className="nt-name">{NOTE_TYPES[k].label}</div>
+              <div className="nt-count">{c}장</div>
+            </button>
+          );
+        })}
+      </div>
+      <button className={`scope-all${scope === 'all' ? ' on' : ''}`}
+        onClick={() => setScope('all')}>
+        {scope === 'all' ? '✓ ' : ''}전체 {notes.length}장 함께 복습
+      </button>
+
+      <div className="section-title">복습 방법 · {scope === 'all' ? '전체' : NOTE_TYPES[scope].label} {pool.length}장</div>
+      {REVIEW_MODES.map(m => (
+        <button key={m.id} className="mode-row" disabled={pool.length < m.min} onClick={() => start(m.id)}>
+          <span className="mode-emoji">{m.emoji}</span>
+          <span style={{minWidth:0}}>
+            <span className="mode-name" style={{display:'block'}}>{m.name}</span>
+            <span className="mode-desc" style={{display:'block'}}>
+              {pool.length < m.min ? `${m.min}장 이상 필요해요` : m.desc}
+            </span>
+          </span>
+          <span className="mode-arrow">›</span>
+        </button>
+      ))}
+
+      <div style={{display:'flex', gap:8, marginTop:14}}>
+        <button className="btn btn-ghost-rose" style={{flex:1, padding:13}} onClick={() => setView('add')}>+ 내용 추가</button>
+        <button className="btn btn-ghost" style={{flex:1, padding:13}} onClick={() => setView('manage')}>목록 관리</button>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main App ──────────────────────────────────────────────────────────── */
 function App() {
   const [appState, setAppState] = useState(null);
@@ -1186,13 +2088,14 @@ function App() {
 
   if (!appState?.p1) return (
     <SetupScreen onComplete={(p1, p2) => {
-      updateState({ p1, p2, streak:1, learned:[], p1Learned:[], p2Learned:[], quizWins:0, hiragana:[], katakana:[] });
+      updateState({ p1, p2, streak:1, learned:[], p1Learned:[], p2Learned:[], quizWins:0, hiragana:[], katakana:[], notes:[] });
     }} />
   );
 
   const tabs = [
     { id:'home',  icon:'🏠', label:'홈' },
     { id:'vocab', icon:'📖', label:'어휘' },
+    { id:'notes', icon:'📝', label:'내 노트' },
     { id:'quiz',  icon:'⚔️',  label:'퀴즈' },
     { id:'kana',  icon:'あ',  label:'문자' },
   ];
@@ -1200,6 +2103,7 @@ function App() {
   const HEADER_TITLES = {
     home:  { main:'우리 둘이', accent:'일본어' },
     vocab: { main:'어휘', accent:'학습' },
+    notes: { main:'내', accent:'노트' },
     quiz:  { main:'퀴즈', accent:'배틀' },
     kana:  { main:'가나', accent:'あ ア' },
   };
@@ -1224,6 +2128,7 @@ function App() {
 
       {tab==='home'     && <HomeTab     state={appState} setState={updateState} />}
       {tab==='vocab'    && <VocabTab    state={appState} setState={updateState} />}
+      {tab==='notes'    && <NotesTab    state={appState} setState={updateState} showToast={showToast} />}
       {tab==='quiz'     && <QuizTab     state={appState} setState={updateState} showToast={showToast} />}
       {tab==='kana'     && <KanaTab     state={appState} setState={updateState} showToast={showToast} />}
 
