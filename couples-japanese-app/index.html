@@ -520,6 +520,33 @@
     .result-score-num.plum { color: var(--plum); }
     .result-vs-sep { font-size: 18px; color: var(--border); font-weight: 700; }
 
+    /* ── Direction chips & rows ─────────────────────────────────────────── */
+    .dir-chip {
+      display: inline-block; font-size: 9.5px; font-weight: 700;
+      letter-spacing: 0.2px; padding: 3px 7px; border-radius: 6px;
+      margin-right: 6px; white-space: nowrap;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .dir-mean   { background: var(--rose-lt); color: var(--rose); }
+    .dir-read   { background: var(--plum-lt); color: var(--plum); }
+    .dir-recall { background: var(--ok-lt);   color: var(--ok); }
+
+    .dir-row {
+      display: flex; align-items: center; gap: 4px; width: 100%;
+      padding: 12px 10px; border-radius: 12px; margin-bottom: 6px;
+      border: 1.5px solid var(--border); background: var(--surface-2);
+      text-align: left; transition: all 0.16s;
+    }
+    .dir-row.on { border-color: var(--rose); background: var(--rose-lt); }
+    .dir-row:disabled { opacity: 1; }
+    .dir-row:last-child { margin-bottom: 0; }
+    .dir-name { display: block; font-size: 14px; font-weight: 700; color: var(--ink); }
+    .dir-desc { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; line-height: 1.35; }
+    .dir-count {
+      font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums;
+      flex-shrink: 0; font-weight: 600;
+    }
+
     /* ── Today hero ─────────────────────────────────────────────────────── */
     .today-hero {
       background: var(--rose); color: #fff;
@@ -920,7 +947,9 @@ function makeNote(type, front, reading, back, extra) {
     type, front:(front||'').trim(), reading:(reading||'').trim(),
     back:(back||'').trim(), extra:(extra||'').trim(),
     box:1, ok:0, ng:0,
-    reps:0, ivl:0, ease:2.5, lapses:0, due:0,
+    reps:0,   ivl:0, ease:2.5, lapses:0, due:0,
+    r_reps:0, r_ivl:0, r_ease:2.5, r_lapses:0, r_due:0,
+    p_reps:0, p_ivl:0, p_ease:2.5, p_lapses:0, p_due:0,
   };
 }
 
@@ -992,20 +1021,51 @@ const AGAIN_DELAY = 600000;      /* 10 min */
 const MAX_IVL = 365;
 const DEFAULT_NEW_PER_DAY = 20;
 
+/* A note is drilled in up to three directions, each with its own schedule.
+   Knowing 勉強 means "공부" is not the same as being able to read it or to
+   produce it from Korean, so they are tracked separately. Each direction
+   keeps its scheduling fields under its own field prefix on the same note. */
+const DIRS = {
+  mean:   { pre:'',   label:'뜻',     ask:'알맞은 뜻은?',        short:'일→뜻' },
+  read:   { pre:'r_', label:'읽기',   ask:'어떻게 읽을까요?',     short:'한자→읽기' },
+  recall: { pre:'p_', label:'일본어', ask:'일본어로는?',          short:'뜻→일본어' },
+};
+const DIR_KEYS = ['mean', 'read', 'recall'];
+
+function hasKanji(str) { return /[一-龯㐀-䶿]/.test(str || ''); }
+/* grammar cards keep 접속·활용 in `reading`, not a reading — skip those */
+function readable(n) { return n.type !== 'grammar' && !!n.reading && hasKanji(n.front); }
+function dirApplies(n, dir) {
+  if (dir === 'read') return readable(n);
+  return true;
+}
+
+function sget(n, dir, f) { return n[DIRS[dir].pre + f]; }
+function sset(n, dir, patch) {
+  const pre = DIRS[dir].pre, out = { ...n };
+  Object.keys(patch).forEach(k => { out[pre + k] = patch[k]; });
+  return out;
+}
+
+/* what the card shows and what counts as the answer, per direction */
+function qText(n, dir) { return dir === 'recall' ? n.back : n.front; }
+function aText(n, dir) { return dir === 'read' ? n.reading : dir === 'recall' ? n.front : n.back; }
+
 /* grade: 0 다시 · 1 어려움 · 2 보통 · 3 쉬움 */
-function schedule(n, grade) {
+function schedule(n, grade, dir) {
   const now = Date.now();
-  let ivl = n.ivl || 0;
-  let ease = n.ease || 2.5;
-  const reps = (n.reps || 0) + 1;
-  let lapses = n.lapses || 0;
+  let ivl = sget(n, dir, 'ivl') || 0;
+  let ease = sget(n, dir, 'ease') || 2.5;
+  const had = sget(n, dir, 'reps') || 0;
+  const reps = had + 1;
+  let lapses = sget(n, dir, 'lapses') || 0;
 
   if (grade === 0) {
     lapses += 1;
     ease = Math.max(1.3, ease - 0.2);
-    return { ...n, ivl:0, ease, reps, lapses, due: now + AGAIN_DELAY, box:1 };
+    return sset(n, dir, { ivl:0, ease, reps, lapses, due: now + AGAIN_DELAY, box:1 });
   }
-  if (!n.reps || ivl === 0) {
+  if (!had || ivl === 0) {
     ivl = grade === 3 ? 3 : 1;                 /* first graduation */
   } else if (grade === 1) {
     ease = Math.max(1.3, ease - 0.15);
@@ -1017,8 +1077,10 @@ function schedule(n, grade) {
     ivl = Math.max(1, Math.round(ivl * ease * 1.3));
   }
   ivl = Math.min(ivl, MAX_IVL);
-  return { ...n, ivl, ease, reps, lapses, due: now + ivl * DAY, box: boxFromIvl(ivl) };
+  return sset(n, dir, { ivl, ease, reps, lapses, due: now + ivl * DAY, box: boxFromIvl(ivl) });
 }
+function previewIvl(n, grade, dir) { return sget(schedule(n, grade, dir), dir, 'ivl'); }
+
 function boxFromIvl(ivl) {
   return ivl >= 60 ? 5 : ivl >= 21 ? 4 : ivl >= 7 ? 3 : ivl >= 1 ? 2 : 1;
 }
@@ -1037,31 +1099,47 @@ function daysBetween(a, b) {
   return Math.round((new Date(b + 'T00:00') - new Date(a + 'T00:00')) / DAY);
 }
 
+/* which directions the user has switched on (뜻 is always on) */
+function activeDirs(state) {
+  return DIR_KEYS.filter(d => d === 'mean' || (state.dirs || {})[d] !== false);
+}
+function entriesOf(notes, dirs) {
+  const out = [];
+  notes.forEach(n => dirs.forEach(d => { if (dirApplies(n, d)) out.push({ n, dir:d }); }));
+  return out;
+}
+
 /* Cards waiting right now, split into review and new */
-function dueSplit(notes, newLeft) {
+function dueSplit(notes, newLeft, dirs) {
   const now = Date.now();
-  const review = notes.filter(n => n.reps && (n.due || 0) <= now);
-  const fresh  = notes.filter(n => !n.reps);
-  return { review, fresh: fresh.slice(0, Math.max(0, newLeft)), freshTotal: fresh.length };
+  const all = entriesOf(notes, dirs);
+  const review = all.filter(e => sget(e.n, e.dir, 'reps') && (sget(e.n, e.dir, 'due') || 0) <= now);
+  const fresh  = all.filter(e => !sget(e.n, e.dir, 'reps'));
+  return { review, fresh: fresh.slice(0, Math.max(0, newLeft)), freshTotal: fresh.length, total: all.length };
 }
 
 /* How many cards come back on each of the next 7 days */
-function forecast(notes, days) {
+function forecast(notes, days, dirs) {
+  const all = entriesOf(notes, dirs);
   const out = [];
   const start = new Date(); start.setHours(0,0,0,0);
   for (let i = 1; i <= days; i++) {
     const from = start.getTime() + i * DAY;
-    out.push(notes.filter(n => n.reps && (n.due||0) >= from && (n.due||0) < from + DAY).length);
+    out.push(all.filter(e => {
+      const due = sget(e.n, e.dir, 'due') || 0;
+      return sget(e.n, e.dir, 'reps') && due >= from && due < from + DAY;
+    }).length);
   }
   return out;
 }
 
-/* which drill a card gets, by how well it is known */
-function modeForNote(n) {
-  const r = n.reps || 0;
+/* Which drill a card gets. Only 뜻 cards are ever typed — the other two
+   would need a Japanese keyboard, so they stay multiple choice. */
+function modeFor(n, dir) {
+  const r = sget(n, dir, 'reps') || 0;
   if (r === 0) return 'flash';
-  if (r < 4)   return 'choice';
-  return 'type';
+  if (dir !== 'mean') return 'choice';
+  return r < 4 ? 'choice' : 'type';
 }
 
 /* Weakest cards first, so review time goes where it is needed */
@@ -2263,7 +2341,7 @@ const DECK_INDEX = (() => {
   return m;
 })();
 function backfillDecks(notes) {
-  if (!notes || !notes.some(n => n.deck === undefined || n.lv === undefined || n.reps === undefined)) return notes;
+  if (!notes || !notes.some(n => n.deck === undefined || n.lv === undefined || n.reps === undefined || n.r_reps === undefined)) return notes;
   return notes.map(n => {
     const next = { ...n };
     if (next.deck === undefined) next.deck = DECK_INDEX[deckKey(n.type, n.front, n.extra)] || '';
@@ -2277,6 +2355,10 @@ function backfillDecks(notes) {
       next.ease   = 2.5;
       next.lapses = 0;
       next.due    = next.reps ? Date.now() : 0;
+    }
+    if (next.r_reps === undefined) {
+      next.r_reps = 0; next.r_ivl = 0; next.r_ease = 2.5; next.r_lapses = 0; next.r_due = 0;
+      next.p_reps = 0; next.p_ivl = 0; next.p_ease = 2.5; next.p_lapses = 0; next.p_due = 0;
     }
     return next;
   });
@@ -3084,34 +3166,39 @@ const GRADES = [
   { g:3, label:'쉬움',   cls:'g-easy'  },
 ];
 
-function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) {
+function StudySession({ queue: initial, pool, furigana, onGrade, onDone, onExit }) {
   const [queue, setQueue] = useState(initial);
   const [i, setI] = useState(0);
   const [revealed, setRevealed] = useState(false);  /* back is showing now */
-  const [seen, setSeen] = useState(false);          /* answer has been shown at least once */
+  const [seen, setSeen] = useState(false);          /* answer shown at least once */
   const [sel, setSel] = useState(null);
   const [val, setVal] = useState('');
   const [judged, setJudged] = useState(null);
   const [stats, setStats] = useState({ done:0, again:0 });
   const timer = useTimeoutRef();
 
-  const n = queue[i];
-  const mode = n ? modeForNote(n) : null;
+  const e = queue[i];
+  const n = e && e.n, dir = e && e.dir;
+  const mode = e ? modeFor(n, dir) : null;
 
   const opts = useMemo(() => {
-    if (!n || mode !== 'choice') return [];
-    const others = shuffle(pool.filter(x => x.id !== n.id && normAns(x.back) !== normAns(n.back))).slice(0, 3);
-    return shuffle([n, ...others]);
-  }, [n && n.id, mode]);
+    if (!e || mode !== 'choice') return [];
+    const mine = aText(n, dir);
+    let others = pool.filter(x => x.id !== n.id && aText(x, dir) && aText(x, dir) !== mine);
+    /* keep the choices plausible: same card type first */
+    const same = others.filter(x => x.type === n.type);
+    if (same.length >= 3) others = same;
+    return shuffle([n, ...shuffle(others).slice(0, 3)]);
+  }, [e && n.id, dir, mode]);
 
-  if (!n) return null;
+  if (!e) return null;
 
   const advance = (grade) => {
-    onGrade(n.id, grade);
+    onGrade(n.id, grade, dir);
     const next = { done: stats.done + 1, again: stats.again + (grade === 0 ? 1 : 0) };
     setStats(next);
     /* a card you got wrong comes back later in the same session */
-    const q = grade === 0 ? [...queue, n] : queue;
+    const q = grade === 0 ? [...queue, e] : queue;
     if (i + 1 >= q.length) { onDone(next); return; }
     setQueue(q); setI(i + 1);
     setRevealed(false); setSeen(false); setSel(null); setVal(''); setJudged(null);
@@ -3124,18 +3211,25 @@ function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) 
     timer.current = setTimeout(() => advance(ok ? 2 : 0), ok ? 450 : 1300);
   };
 
-  const submitTyped = (e) => {
-    e.preventDefault();
+  const submitTyped = (ev) => {
+    ev.preventDefault();
     if (judged !== null || !val.trim()) return;
     setJudged(answerMatches(val, n.back));
   };
 
-  const left = queue.length - i;
+  /* 뜻 cards may show the reading under the question; the other two never do
+     (it would give the answer away, or it IS the answer) */
+  const showReadingOnQ = dir === 'mean' && furigana && n.reading;
+  const question = qText(n, dir);
+  const answer = aText(n, dir);
+  const big = question.length > 10 ? ' sm' : '';
+
   const header = (
     <div className="rv-bar">
       <button className="btn btn-ghost btn-sm" onClick={onExit}>← 그만</button>
       <span className="fc-count">
-        <span className="combo">{NOTE_TYPES[n.type].label}</span> · 남은 {left}장
+        <span className={`dir-chip dir-${dir}`}>{DIRS[dir].short}</span>
+        {NOTE_TYPES[n.type].label} · 남은 {queue.length - i}장
       </span>
     </div>
   );
@@ -3147,64 +3241,75 @@ function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) 
         {header}
         <div className="new-badge">처음 보는 카드</div>
         <div className="fc-wrap" onClick={() => { setRevealed(r => !r); setSeen(true); }}>
-          <div className={`fc${revealed ? ' flipped' : ''}`} key={n.id}>
+          <div className={`fc${revealed ? ' flipped' : ''}`} key={n.id + dir}>
             <div className="fc-face fc-front">
-              <div className="fc-hint">{seen ? '탭하면 다시 뒤집혀요' : '탭하면 뜻이 나와요'}</div>
-              <div className="fc-kana" style={{fontSize: n.front.length > 8 ? 26 : 50}}>{n.front}</div>
-              {n.reading && <div className="fc-tag">{n.reading}</div>}
+              <div className="fc-hint">{seen ? '탭하면 다시 뒤집혀요' : DIRS[dir].ask}</div>
+              <div className="fc-kana" style={{fontSize: question.length > 8 ? 26 : 50}}>{question}</div>
+              {showReadingOnQ && <div className="fc-tag">{n.reading}</div>}
             </div>
             <div className="fc-face fc-back">
-              <div style={{fontSize: n.back.length > 14 ? 17 : 22, fontWeight:700, padding:'0 18px', textAlign:'center'}}>{n.back}</div>
-              {n.extra && <div className="fc-tag" style={{marginTop:10, padding:'0 20px', textAlign:'center'}}>{n.extra}</div>}
+              <div style={{fontSize: answer.length > 14 ? 17 : 22, fontWeight:700, padding:'0 18px', textAlign:'center'}}>{answer}</div>
+              {dir !== 'read' && n.reading && <div className="fc-tag" style={{marginTop:8}}>{n.reading}</div>}
+              {dir === 'recall' && <div className="fc-tag" style={{marginTop:4}}>{n.back}</div>}
+              {n.extra && <div className="fc-tag" style={{marginTop:8, padding:'0 20px', textAlign:'center'}}>{n.extra}</div>}
             </div>
           </div>
         </div>
-        {seen ? <GradeRow note={n} onGrade={advance} /> : (
+        {seen ? <GradeRow note={n} dir={dir} onGrade={advance} /> : (
           <div className="tip-card" style={{textAlign:'center'}}>
-            <div className="tip-text">뜻을 떠올려 본 다음 카드를 탭하세요.</div>
+            <div className="tip-text">답을 떠올려 본 다음 카드를 탭하세요.</div>
           </div>
         )}
       </div>
     );
   }
 
-  /* ── familiar card: pick the meaning ── */
+  /* ── familiar card: pick the answer ── */
   if (mode === 'choice') {
     return (
       <div className="content">
         {header}
         <div className="quiz-q-card">
-          <div className="quiz-eyebrow">알맞은 뜻은?</div>
-          <div className={`rv-q${n.front.length > 10 ? ' sm' : ''}`}>{n.front}</div>
-          {n.reading && <div className="rv-sub">{n.reading}</div>}
+          <div className="quiz-eyebrow">{DIRS[dir].ask}</div>
+          <div className={`rv-q${big}`}>{question}</div>
+          {showReadingOnQ && <div className="rv-sub">{n.reading}</div>}
         </div>
         <div className="quiz-grid">
           {opts.map(o => {
-            let cls = 'quiz-opt';
+            let cls = 'quiz-opt' + (dir === 'mean' ? '' : ' ja');
             if (sel) {
               if (o.id === n.id) cls += ' correct';
               else if (sel.id === o.id) cls += ' wrong';
             }
-            return <button key={o.id} className={cls} disabled={!!sel} onClick={() => pickChoice(o)}>{o.back}</button>;
+            return (
+              <button key={o.id} className={cls} disabled={!!sel} onClick={() => pickChoice(o)}>
+                {aText(o, dir)}
+              </button>
+            );
           })}
         </div>
+        {sel && dir !== 'mean' && (
+          <div className="tip-card" style={{marginTop:10, textAlign:'center'}}>
+            <div className="tip-text">{n.front}{n.reading ? ` · ${n.reading}` : ''} — {n.back}</div>
+          </div>
+        )}
       </div>
     );
   }
 
-  /* ── well known: write it from memory ── */
+  /* ── well known: write the meaning from memory ── */
   return (
     <div className="content">
       {header}
       <div className="quiz-q-card">
         <div className="quiz-eyebrow">뜻을 입력하세요</div>
-        <div className={`rv-q${n.front.length > 10 ? ' sm' : ''}`}>{n.front}</div>
-        {n.reading && <div className="rv-sub">{n.reading}</div>}
+        <div className={`rv-q${big}`}>{question}</div>
+        {showReadingOnQ && <div className="rv-sub">{n.reading}</div>}
       </div>
       {judged === null ? (
         <form onSubmit={submitTyped}>
           <input className="field-input" value={val} autoFocus placeholder="뜻을 한국어로"
-            onChange={e => setVal(e.target.value)} />
+            onChange={ev => setVal(ev.target.value)} />
           <button className="btn btn-primary" style={{marginTop:10}} type="submit" disabled={!val.trim()}>확인</button>
         </form>
       ) : (
@@ -3212,10 +3317,11 @@ function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) 
           <div className={`ans-box ${judged ? 'ok' : 'ng'}`}>
             <div className="ans-label">{judged ? '정답이에요' : '정답은'}</div>
             <div className="ans-val">{n.back}</div>
-            {!judged && <div style={{fontSize:12, marginTop:6, opacity:0.8}}>입력: {val}</div>}
+            {n.reading && <div style={{fontSize:12, marginTop:6, opacity:0.8}}>{n.front} · {n.reading}</div>}
+            {!judged && <div style={{fontSize:12, marginTop:4, opacity:0.8}}>입력: {val}</div>}
           </div>
           {judged
-            ? <GradeRow note={n} onGrade={advance} hideAgain />
+            ? <GradeRow note={n} dir={dir} onGrade={advance} hideAgain />
             : (
               <>
                 <button className="btn btn-primary" onClick={() => advance(0)}>다시 볼게요</button>
@@ -3230,14 +3336,14 @@ function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) 
 }
 
 /* the four scheduling buttons, each showing when the card returns */
-function GradeRow({ note, onGrade, hideAgain }) {
+function GradeRow({ note, dir, onGrade, hideAgain }) {
   const rows = hideAgain ? GRADES.slice(1) : GRADES;
   return (
     <div className="grade-row">
       {rows.map(({ g, label, cls }) => (
         <button key={g} className={`grade-btn ${cls}`} onClick={() => onGrade(g)}>
           <span className="grade-label">{label}</span>
-          <span className="grade-when">{ivlLabel(schedule(note, g).ivl)}</span>
+          <span className="grade-when">{ivlLabel(previewIvl(note, g, dir))}</span>
         </button>
       ))}
     </div>
@@ -3246,17 +3352,19 @@ function GradeRow({ note, onGrade, hideAgain }) {
 
 /* ── Today tab ─────────────────────────────────────────────────────────── */
 function TodayTab({ state, setState, showToast, studying, setStudying }) {
-  const notes = (state.notes || []).filter(n => !state.coreOnly || n.lv !== 'lit');
+  const notes = (state.notes || []).filter(n => state.coreOnly === false || n.lv !== 'lit');
   const today = todayStr();
   const daily = state.daily && state.daily.date === today
     ? state.daily : { date: today, newDone: 0, reviewDone: 0 };
   const perDay = state.newPerDay || DEFAULT_NEW_PER_DAY;
-  const { review, fresh, freshTotal } = dueSplit(notes, perDay - daily.newDone);
+  const dirs = activeDirs(state);
+  const furigana = state.furigana !== false;
+  const { review, fresh, freshTotal, total } = dueSplit(notes, perDay - daily.newDone, dirs);
   const waiting = review.length + fresh.length;
 
-  const grade = (id, g) => {
+  const grade = (id, g, dir) => {
     const target = (state.notes || []).find(x => x.id === id);
-    const wasNew = !target.reps;
+    const wasNew = !sget(target, dir, 'reps');
     const d = state.daily && state.daily.date === today
       ? { ...state.daily } : { date: today, newDone: 0, reviewDone: 0 };
     if (wasNew) d.newDone += 1; else d.reviewDone += 1;
@@ -3267,7 +3375,7 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
 
     setState({
       ...state,
-      notes: state.notes.map(x => x.id === id ? schedule(x, g) : x),
+      notes: state.notes.map(x => x.id === id ? schedule(x, g, dir) : x),
       daily: d, streak, lastStudy: today,
     });
   };
@@ -3278,6 +3386,7 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
         key={studying.id}
         queue={studying.queue}
         pool={notes}
+        furigana={furigana}
         onGrade={grade}
         onExit={() => setStudying(null)}
         onDone={(s) => { setStudying(null); showToast(`${s.done}장 완료 ✓`); }}
@@ -3291,9 +3400,7 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
     setStudying({ id: Date.now(), queue: q });
   };
 
-  const fc = forecast(notes, 7);
-  const dowNames = ['일','월','화','수','목','금','토'];
-  const maxFc = Math.max(1, ...fc);
+  const setDir = (d, on) => setState({ ...state, dirs: { ...(state.dirs || {}), [d]: on } });
 
   if (!notes.length) {
     return (
@@ -3309,6 +3416,11 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
       </div>
     );
   }
+
+  const fc = forecast(notes, 7, dirs);
+  const dowNames = ['일','월','화','수','목','금','토'];
+  const maxFc = Math.max(1, ...fc);
+  const longTerm = entriesOf(notes, dirs).filter(e => (sget(e.n, e.dir, 'ivl') || 0) >= 21).length;
 
   return (
     <div className="content">
@@ -3335,8 +3447,54 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
           <div className="stat-label">오늘 한 장</div>
         </div>
         <div className="stat-tile">
-          <div className="stat-num">{notes.filter(n => (n.ivl||0) >= 21).length}</div>
+          <div className="stat-num">{longTerm}</div>
           <div className="stat-label">장기 기억</div>
+        </div>
+      </div>
+
+      {/* ── what gets tested ── */}
+      <div className="card">
+        <div className="section-title" style={{marginBottom:4}}>테스트 방향</div>
+        <div className="tip-text" style={{marginBottom:14}}>
+          방향마다 따로 기억합니다. 뜻은 아는데 못 읽는 한자를 정확히 잡아내요.
+        </div>
+        {DIR_KEYS.map(d => {
+          const on = dirs.includes(d);
+          const count = notes.filter(n => dirApplies(n, d)).length;
+          return (
+            <button key={d} className={`dir-row${on ? ' on' : ''}`}
+              disabled={d === 'mean'}
+              onClick={() => setDir(d, !on)}>
+              <span className={`dir-chip dir-${d}`}>{DIRS[d].short}</span>
+              <span style={{minWidth:0, flex:1}}>
+                <span className="dir-name">{DIRS[d].label}</span>
+                <span className="dir-desc">
+                  {d === 'mean' ? '일본어를 보고 뜻 맞히기 · 항상 켜짐'
+                   : d === 'read' ? '한자를 히라가나로 읽기'
+                   : '한국어 뜻을 보고 일본어 고르기'}
+                </span>
+              </span>
+              <span className="dir-count">{count}장</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── furigana ── */}
+      <div className="card">
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10}}>
+          <span style={{fontSize:14, fontWeight:600}}>후리가나 (읽는 법)</span>
+        </div>
+        <div className="toggle-wrap" style={{marginBottom:10}}>
+          <button className={`toggle-btn${furigana ? ' active' : ''}`}
+            onClick={() => setState({ ...state, furigana: true })}>보이기</button>
+          <button className={`toggle-btn${!furigana ? ' active' : ''}`}
+            onClick={() => setState({ ...state, furigana: false })}>숨기기</button>
+        </div>
+        <div className="tip-text">
+          {furigana
+            ? '뜻 문제에서 한자 아래 읽는 법이 같이 보여요.'
+            : '뜻 문제에서 한자만 나와요. 정답을 확인할 때 읽는 법이 함께 나옵니다.'}
         </div>
       </div>
 
@@ -3368,7 +3526,8 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
           ))}
         </div>
         <div className="tip-text" style={{marginTop:10}}>
-          안 배운 카드가 {freshTotal}장 남아 있어요. 하루 {perDay}장이면 약 {Math.ceil(freshTotal / perDay)}일이면 다 봅니다.
+          켜 둔 방향을 합치면 모두 {total}장이고, 아직 안 배운 게 {freshTotal}장이에요.
+          하루 {perDay}장이면 약 {Math.ceil(freshTotal / perDay)}일이면 다 봅니다.
         </div>
       </div>
     </div>
