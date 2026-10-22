@@ -244,6 +244,12 @@
       padding: 9px; border-radius: 9px; font-size: 14px; font-weight: 600;
       color: var(--ink-3); transition: all 0.18s;
     }
+    .toggle-wrap.three { grid-template-columns: 1fr 1fr 1fr; }
+    .toggle-wrap.three .toggle-btn { font-size: 12.5px; padding: 9px 4px; }
+    .quiz-opt.kana {
+      font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 30px; padding: 14px 10px;
+    }
     .toggle-btn.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 6px var(--shadow); }
 
     /* ── Setup screen ───────────────────────────────────────────────────── */
@@ -1323,71 +1329,277 @@ function QuizTab({ state, setState, showToast }) {
   );
 }
 
-/* ── Hiragana Tab ──────────────────────────────────────────────────────── */
-function KanaTab({ state, setState, showToast }) {
-  const [kind, setKind] = useState('hiragana');
-  const set = KANA_SETS[kind];
-  const stateKey = set.key;
+/* ── Kana helpers ──────────────────────────────────────────────────────── */
+const HIRA_CHARS = new Set(HIRAGANA.filter(h => h.char).map(h => h.char));
+function kanaKeyOf(char) { return HIRA_CHARS.has(char) ? 'hiragana' : 'katakana'; }
 
-  const learned = new Set(state[stateKey]||[]);
-  const total = set.data.filter(h=>h.char).length;
-  const pct = Math.round(learned.size / total * 100);
+const KANA_MODES = [
+  { id:'chart', label:'표' },
+  { id:'flash', label:'플래시카드' },
+  { id:'quiz',  label:'퀴즈' },
+];
 
-  const toggle = (char) => {
-    if (!char) return;
-    const s = new Set(state[stateKey]||[]);
-    if (s.has(char)) s.delete(char);
-    else { s.add(char); showToast(`${char} ✓`); }
-    setState({...state, [stateKey]:[...s]});
+/* ── Kana: flashcard ───────────────────────────────────────────────────── */
+function KanaFlash({ rows, learned, onMark, onExit, label }) {
+  /* unlearned first, so practice goes where it is needed */
+  const [queue] = useState(() => {
+    const a = shuffle(rows);
+    return [...a.filter(r => !learned.has(r.char)), ...a.filter(r => learned.has(r.char))];
+  });
+  const [i, setI] = useState(0);
+  const [flip, setFlip] = useState(false);
+  const [right, setRight] = useState(0);
+  const r = queue[i];
+  if (!r) return null;
+
+  const answer = (ok) => {
+    onMark(r.char, ok);
+    const n = right + (ok ? 1 : 0);
+    if (i + 1 >= queue.length) { showKanaDone(onExit, n, queue.length); return; }
+    setRight(n); setI(i + 1); setFlip(false);
   };
 
   return (
+    <>
+      <div className="rv-bar">
+        <span className="fc-count">{label}</span>
+        <span className="fc-count">{i + 1} / {queue.length}</span>
+      </div>
+      <div className="prog-track" style={{marginBottom:14}}>
+        <div className="prog-fill" style={{width:`${(i / queue.length) * 100}%`}} />
+      </div>
+
+      <div className="fc-wrap" onClick={() => setFlip(f => !f)}>
+        <div className={`fc${flip ? ' flipped' : ''}`}>
+          <div className="fc-face fc-front">
+            <div className="fc-hint">탭하면 뒤집어요</div>
+            <div className="fc-kana" style={{fontSize:96}}>{r.char}</div>
+          </div>
+          <div className="fc-face fc-back">
+            <div className="fc-romaji" style={{fontSize:52}}>{r.rom}</div>
+            <div className="fc-tag">{kanaKeyOf(r.char) === 'hiragana' ? '히라가나' : '가타카나'}</div>
+          </div>
+        </div>
+      </div>
+
+      {flip ? (
+        <div style={{display:'flex', gap:8}}>
+          <button className="btn btn-ghost" style={{flex:1, padding:14}} onClick={() => answer(false)}>아직이에요</button>
+          <button className="btn btn-ghost-rose" style={{flex:1, padding:14}} onClick={() => answer(true)}>알아요 ✓</button>
+        </div>
+      ) : (
+        <div className="tip-card" style={{textAlign:'center'}}>
+          <div className="tip-text">소리를 먼저 떠올린 다음 뒤집어 확인해 보세요.</div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ── Kana: quiz ────────────────────────────────────────────────────────── */
+function KanaQuiz({ rows, onMark, onExit, label }) {
+  const total = Math.min(10, rows.length);
+  const [queue] = useState(() =>
+    shuffle(rows).slice(0, total).map(r => ({ r, dir: Math.random() < 0.5 ? 'k2r' : 'r2k' })));
+  const [i, setI] = useState(0);
+  const [sel, setSel] = useState(null);
+  const [right, setRight] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const timer = useTimeoutRef();
+  const q = queue[i];
+
+  const opts = useMemo(() => {
+    if (!q) return [];
+    const others = shuffle(rows.filter(x => x.rom !== q.r.rom)).slice(0, 3);
+    return shuffle([q.r, ...others]);
+  }, [i]);
+
+  if (!q) return null;
+
+  const pick = (o) => {
+    if (sel) return;
+    const ok = o.rom === q.r.rom;
+    setSel(o);
+    onMark(q.r.char, ok);
+    const n = right + (ok ? 1 : 0);
+    setCombo(ok ? combo + 1 : 0);
+    timer.current = setTimeout(() => {
+      if (i + 1 >= queue.length) { showKanaDone(onExit, n, queue.length); return; }
+      setRight(n); setI(i + 1); setSel(null);
+    }, 800);
+  };
+
+  const k2r = q.dir === 'k2r';
+  return (
+    <>
+      <div className="rv-bar">
+        <span className="fc-count">{label}</span>
+        <span className="fc-count">
+          {combo >= 2 && <span className="combo">{combo}연속 🔥 </span>}
+          {i + 1} / {queue.length}
+        </span>
+      </div>
+      <div className="prog-track" style={{marginBottom:14}}>
+        <div className="prog-fill" style={{width:`${(i / queue.length) * 100}%`}} />
+      </div>
+
+      <div className="quiz-q-card">
+        <div className="quiz-eyebrow">{k2r ? '이 글자의 소리는?' : '이 소리의 글자는?'}</div>
+        <div className="rv-q" style={{fontSize: k2r ? 76 : 48, letterSpacing: k2r ? 0 : 2}}>
+          {k2r ? q.r.char : q.r.rom}
+        </div>
+      </div>
+
+      <div className="quiz-grid">
+        {opts.map((o, n) => {
+          let cls = 'quiz-opt' + (k2r ? '' : ' kana');
+          if (sel) {
+            if (o.rom === q.r.rom) cls += ' correct';
+            else if (sel.rom === o.rom) cls += ' wrong';
+          }
+          return (
+            <button key={n} className={cls} disabled={!!sel} onClick={() => pick(o)}>
+              {k2r ? o.rom : o.char}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/* shared finish handler for both kana modes */
+function showKanaDone(onExit, right, total) { onExit({ right, total }); }
+
+/* ── Kana tab ──────────────────────────────────────────────────────────── */
+function KanaTab({ state, setState, showToast }) {
+  const [kind, setKind] = useState('hiragana');   // hiragana | katakana | mixed
+  const [mode, setMode] = useState('chart');      // chart | flash | quiz
+  const [result, setResult] = useState(null);
+  const [runId, setRunId] = useState(0);
+
+  const hira = HIRAGANA.filter(h => h.char);
+  const kata = KATAKANA.filter(h => h.char);
+  const rows = kind === 'hiragana' ? hira : kind === 'katakana' ? kata : [...hira, ...kata];
+  const label = kind === 'hiragana' ? '히라가나' : kind === 'katakana' ? '가타카나' : '히라가나 + 가타카나';
+
+  const learnedOf = (key) => new Set(state[key] || []);
+  const allLearned = new Set([...(state.hiragana || []), ...(state.katakana || [])]);
+  const done = rows.filter(r => allLearned.has(r.char)).length;
+  const pct = rows.length ? Math.round(done / rows.length * 100) : 0;
+
+  /* flip a single character in the chart */
+  const toggle = (char) => {
+    if (!char) return;
+    const key = kanaKeyOf(char);
+    const s = new Set(state[key] || []);
+    if (s.has(char)) s.delete(char);
+    else { s.add(char); showToast(`${char} ✓`); }
+    setState({ ...state, [key]: [...s] });
+  };
+  /* quiz / flashcard grading: right marks it known, wrong clears it */
+  const mark = (char, ok) => {
+    const key = kanaKeyOf(char);
+    const s = new Set(state[key] || []);
+    if (ok) s.add(char); else s.delete(char);
+    setState({ ...state, [key]: [...s] });
+  };
+
+  const start = (m) => { setMode(m); setResult(null); setRunId(r => r + 1); };
+
+  const chart = (rowsData, title) => (
+    <div className="card" key={title}>
+      <div className="tip-text" style={{marginBottom:14}}>
+        {title} — 글자를 탭하면 완료로 표시됩니다.
+      </div>
+      <div className="hira-grid">
+        {rowsData.map((h, i) => (
+          h.char ? (
+            <div key={i} className={`hira-cell${allLearned.has(h.char) ? ' learned' : ''}`}
+              onClick={() => toggle(h.char)}>
+              <span className="hira-char">{h.char}</span>
+              <span className="hira-rom">{h.rom}</span>
+            </div>
+          ) : <div key={i} />
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
     <div className="content">
-      <div className="toggle-wrap">
-        {Object.entries(KANA_SETS).map(([id, s]) => (
-          <button key={id} className={`toggle-btn${kind===id?' active':''}`} onClick={() => setKind(id)}>
-            <span style={{fontFamily:'Georgia,serif',marginRight:5}}>{s.glyph}</span>{s.label}
-          </button>
+      <div className="toggle-wrap three">
+        <button className={`toggle-btn${kind === 'hiragana' ? ' active' : ''}`} onClick={() => setKind('hiragana')}>
+          <span style={{fontFamily:'Georgia,serif', marginRight:4}}>あ</span>히라가나
+        </button>
+        <button className={`toggle-btn${kind === 'katakana' ? ' active' : ''}`} onClick={() => setKind('katakana')}>
+          <span style={{fontFamily:'Georgia,serif', marginRight:4}}>ア</span>가타카나
+        </button>
+        <button className={`toggle-btn${kind === 'mixed' ? ' active' : ''}`} onClick={() => setKind('mixed')}>
+          🔀 섞기
+        </button>
+      </div>
+
+      <div className="toggle-wrap three">
+        {KANA_MODES.map(m => (
+          <button key={m.id} className={`toggle-btn${mode === m.id ? ' active' : ''}`}
+            onClick={() => start(m.id)}>{m.label}</button>
         ))}
       </div>
 
-      <div className="card" style={{marginBottom:12}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
-          <span style={{fontSize:14,fontWeight:600}}>{set.label} 진도</span>
-          <span style={{fontFamily:'Georgia,serif',fontSize:22,color:'var(--rose)'}}>{pct}%</span>
+      {result ? (
+        <div className="card" style={{textAlign:'center', padding:30}}>
+          <div className="empty-ja" style={{color:'var(--rose)'}}>
+            {result.right === result.total ? '満' : '復'}
+          </div>
+          <div style={{fontFamily:'Georgia,serif', fontSize:52, color:'var(--rose)', lineHeight:1}}>
+            {Math.round(result.right / result.total * 100)}%
+          </div>
+          <div style={{fontSize:14, color:'var(--ink-2)', marginTop:8}}>
+            {result.total}개 중 {result.right}개 정답
+          </div>
+          <div style={{display:'flex', gap:8, marginTop:24}}>
+            <button className="btn btn-ghost" style={{flex:1, padding:14}}
+              onClick={() => { setResult(null); setMode('chart'); }}>표로</button>
+            <button className="btn btn-ghost-rose" style={{flex:1, padding:14}}
+              onClick={() => { setResult(null); setRunId(r => r + 1); }}>한 번 더</button>
+          </div>
         </div>
-        <div className="prog-track">
-          <div className="prog-fill" style={{width:`${pct}%`}}/>
-        </div>
-        <div style={{fontSize:12,color:'var(--ink-3)',marginTop:8,fontVariantNumeric:'tabular-nums'}}>
-          {learned.size} / {total} 글자 완료
-        </div>
-      </div>
+      ) : mode === 'flash' ? (
+        <KanaFlash key={runId} rows={rows} learned={allLearned} label={label}
+          onMark={mark} onExit={setResult} />
+      ) : mode === 'quiz' ? (
+        <KanaQuiz key={runId} rows={rows} label={label}
+          onMark={mark} onExit={setResult} />
+      ) : (
+        <>
+          <div className="card" style={{marginBottom:12}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:8}}>
+              <span style={{fontSize:14, fontWeight:600}}>{label} 진도</span>
+              <span style={{fontFamily:'Georgia,serif', fontSize:22, color:'var(--rose)'}}>{pct}%</span>
+            </div>
+            <div className="prog-track"><div className="prog-fill" style={{width:`${pct}%`}} /></div>
+            <div style={{fontSize:12, color:'var(--ink-3)', marginTop:8, fontVariantNumeric:'tabular-nums'}}>
+              {done} / {rows.length} 글자 완료
+            </div>
+          </div>
 
-      <div className="card">
-        <div className="tip-text" style={{marginBottom:14}}>
-          글자를 탭하면 완료로 표시됩니다. 파트너와 번갈아 읽는 연습을 해보세요.
-        </div>
-        <div className="hira-grid">
-          {set.data.map((h, i) => (
-            h.char ? (
-              <div key={i} className={`hira-cell${learned.has(h.char)?' learned':''}`} onClick={() => toggle(h.char)}>
-                <span className="hira-char">{h.char}</span>
-                <span className="hira-rom">{h.rom}</span>
-              </div>
-            ) : <div key={i} />
-          ))}
-        </div>
-      </div>
+          {kind === 'mixed'
+            ? [chart(HIRAGANA, '히라가나'), chart(KATAKANA, '가타카나')]
+            : chart(kind === 'hiragana' ? HIRAGANA : KATAKANA, label)}
 
-      <div className="tip-card" style={{marginTop:12}}>
-        <div className="tip-label">학습 팁</div>
-        <div className="tip-text">
-          {kind==='hiragana'
-            ? '히라가나는 일본어의 기본 문자예요. 하루 한 행(5글자)씩 외워보세요.'
-            : '가타카나는 외래어·이름 표기에 쓰여요. コーヒー(커피)처럼 익숙한 단어부터 시작해보세요.'}
-        </div>
-      </div>
+          <div className="tip-card" style={{marginTop:12}}>
+            <div className="tip-label">학습 팁</div>
+            <div className="tip-text">
+              {kind === 'hiragana'
+                ? '히라가나는 일본어의 기본 문자예요. 하루 한 행(5글자)씩 외워보세요.'
+                : kind === 'katakana'
+                ? '가타카나는 외래어·이름 표기에 쓰여요. コーヒー(커피)처럼 익숙한 단어부터 시작해보세요.'
+                : 'シ와ツ, ソ와ン처럼 헷갈리는 글자는 섞어서 퀴즈를 풀어야 확실히 구분돼요.'}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1598,7 +1810,7 @@ const STUDY_DECKS = [
     ],
   },
   {
-    id:'omoidasu', name:'時には思い出すでしょう', sub:'이별 노래 가사', date:'2026-10-06',
+    id:'omoidasu', name:'時には思い出すでしょう', sub:'이별 노래 가사', date:'2026-08-06',
     word: [
       ['時には','ときには','때로는, 가끔은','時 때 + に + は'],
       ['思い出す','おもいだす','떠올리다, 생각해 내다','思う+出す 복합동사'],
@@ -1669,7 +1881,7 @@ const STUDY_DECKS = [
     ],
   },
   {
-    id:'kiiro', name:'黄色いシャツ着た無口な男', sub:'オッチョンジ 惹かれる', date:'2026-10-06',
+    id:'kiiro', name:'黄色いシャツ着た無口な男', sub:'オッチョンジ 惹かれる', date:'2026-08-06',
     word: [
       ['黄色い','きいろい','노랗다, 노란','黄 노랑 + 色 색'],
       ['シャツ','シャツ','셔츠','외래어는 가타카나'],
@@ -1724,7 +1936,7 @@ const STUDY_DECKS = [
     ],
   },
   {
-    id:'shokuyoku', name:'盛 · 食欲の秋', sub:'다이어트 회화', date:'2026-10-20',
+    id:'shokuyoku', name:'盛 · 食欲の秋', sub:'다이어트 회화', date:'2026-10-13',
     word: [
       ['盛大','せいだい','성대한, 규모가 크고 화려한','盛 성할 성'],
       ['盛る','もる','담다, 수북하게 담다, 과장하다',''],
@@ -1805,7 +2017,7 @@ const STUDY_DECKS = [
     ],
   },
   {
-    id:'akiuta', name:'あかい葉っぱ', sub:'가을 시', date:'2026-10-20',
+    id:'akiuta', name:'あかい葉っぱ', sub:'가을 시', date:'2026-08-06',
     word: [
       ['赤い','あかい','빨갛다, 붉은',''],
       ['葉っぱ','はっぱ','나뭇잎','葉 잎의 친근한 회화체'],
