@@ -1007,14 +1007,6 @@ function answerMatches(input, answer) {
 }
 
 /* ── SRS (Leitner) ─────────────────────────────────────────────────────── */
-function gradeNote(note, correct) {
-  return {
-    ...note,
-    box: correct ? Math.min(MAX_BOX, (note.box||1) + 1) : 1,
-    ok:  (note.ok||0) + (correct ? 1 : 0),
-    ng:  (note.ng||0) + (correct ? 0 : 1),
-  };
-}
 /* ── Spaced repetition (SM-2 lite) ─────────────────────────────────────── */
 const DAY = 86400000;
 const AGAIN_DELAY = 600000;      /* 10 min */
@@ -3038,8 +3030,25 @@ function NotesTab({ state, setState, showToast }) {
     setState({ ...state, notes: [...notes, ...added] });
     showToast(`${added.length}장 불러왔어요 ✓`);
   };
-  const grade = (id, correct) =>
-    setState({ ...state, notes: notes.map(n => n.id === id ? gradeNote(n, correct) : n) });
+  /* manual drills feed the same schedule as the 오늘 tab, so studying a
+     lesson here actually pushes those cards forward */
+  const grade = (id, correct) => {
+    const target = notes.find(x => x.id === id);
+    if (!target) return;
+    const day = todayStr();
+    const wasNew = !sget(target, 'mean', 'reps');
+    const d = state.daily && state.daily.date === day
+      ? { ...state.daily } : { date: day, newDone: 0, reviewDone: 0 };
+    if (wasNew) d.newDone += 1; else d.reviewDone += 1;
+    let streak = state.streak || 0;
+    const last = state.lastStudy;
+    if (last !== day) streak = last && daysBetween(last, day) === 1 ? streak + 1 : 1;
+    setState({
+      ...state,
+      notes: notes.map(n => n.id === id ? schedule(n, correct ? 2 : 0, 'mean') : n),
+      daily: d, streak, lastStudy: day,
+    });
+  };
 
   const start = (m) => { setMode(m); setResult(null); setRunId(r => r + 1); setView('review'); };
   const home = () => { setView('home'); setMode(null); setResult(null); };
