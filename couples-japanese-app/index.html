@@ -3045,7 +3045,8 @@ const GRADES = [
 function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) {
   const [queue, setQueue] = useState(initial);
   const [i, setI] = useState(0);
-  const [revealed, setRevealed] = useState(false);
+  const [revealed, setRevealed] = useState(false);  /* back is showing now */
+  const [seen, setSeen] = useState(false);          /* answer has been shown at least once */
   const [sel, setSel] = useState(null);
   const [val, setVal] = useState('');
   const [judged, setJudged] = useState(null);
@@ -3071,7 +3072,7 @@ function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) 
     const q = grade === 0 ? [...queue, n] : queue;
     if (i + 1 >= q.length) { onDone(next); return; }
     setQueue(q); setI(i + 1);
-    setRevealed(false); setSel(null); setVal(''); setJudged(null);
+    setRevealed(false); setSeen(false); setSel(null); setVal(''); setJudged(null);
   };
 
   const pickChoice = (o) => {
@@ -3103,10 +3104,10 @@ function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) 
       <div className="content">
         {header}
         <div className="new-badge">처음 보는 카드</div>
-        <div className="fc-wrap" onClick={() => setRevealed(true)}>
+        <div className="fc-wrap" onClick={() => { setRevealed(r => !r); setSeen(true); }}>
           <div className={`fc${revealed ? ' flipped' : ''}`} key={n.id}>
             <div className="fc-face fc-front">
-              <div className="fc-hint">탭하면 뜻이 나와요</div>
+              <div className="fc-hint">{seen ? '탭하면 다시 뒤집혀요' : '탭하면 뜻이 나와요'}</div>
               <div className="fc-kana" style={{fontSize: n.front.length > 8 ? 26 : 50}}>{n.front}</div>
               {n.reading && <div className="fc-tag">{n.reading}</div>}
             </div>
@@ -3116,7 +3117,7 @@ function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) 
             </div>
           </div>
         </div>
-        {revealed ? <GradeRow note={n} onGrade={advance} /> : (
+        {seen ? <GradeRow note={n} onGrade={advance} /> : (
           <div className="tip-card" style={{textAlign:'center'}}>
             <div className="tip-text">뜻을 떠올려 본 다음 카드를 탭하세요.</div>
           </div>
