@@ -520,6 +520,66 @@
     .result-score-num.plum { color: var(--plum); }
     .result-vs-sep { font-size: 18px; color: var(--border); font-weight: 700; }
 
+    /* ── Today hero ─────────────────────────────────────────────────────── */
+    .today-hero {
+      background: var(--rose); color: #fff;
+      border-radius: 20px; padding: 26px 22px 22px;
+      margin-bottom: 12px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .today-hero::before {
+      content: '今'; position: absolute;
+      font-family: Georgia, serif; font-size: 150px;
+      color: rgba(255,255,255,0.06); right: -18px; top: -34px;
+      line-height: 1; pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase;
+      opacity: 0.7; font-weight: 700; margin-bottom: 6px;
+    }
+    .hero-num {
+      font-family: Georgia, serif; font-size: 68px; line-height: 1;
+      margin-bottom: 8px; font-variant-numeric: tabular-nums;
+    }
+    .hero-split {
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      font-size: 12.5px; opacity: 0.8; margin-bottom: 20px;
+    }
+    .hero-dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+    .hero-btn {
+      background: #fff; color: var(--rose);
+      width: 100%; padding: 15px; font-size: 16px; font-weight: 700;
+      border-radius: 13px; letter-spacing: 0.2px;
+    }
+    .hero-btn:disabled { opacity: 0.55; pointer-events: none; }
+    .new-badge {
+      display: inline-block; font-size: 10.5px; font-weight: 700;
+      letter-spacing: 0.5px; padding: 4px 10px; border-radius: 20px;
+      background: var(--plum-lt); color: var(--plum); margin-bottom: 10px;
+    }
+
+    /* ── Grade buttons ──────────────────────────────────────────────────── */
+    .grade-row { display: flex; gap: 6px; }
+    .grade-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 13px 4px; border-radius: 13px; border: 1.5px solid var(--border);
+      background: var(--surface); transition: transform 0.14s;
+    }
+    .grade-btn:active { transform: scale(0.95); }
+    .grade-label { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+    .grade-when { font-size: 10.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+    .g-again { border-color: color-mix(in srgb, var(--err) 40%, transparent); background: var(--err-lt); }
+    .g-again .grade-label { color: var(--err); }
+    .g-easy  { border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: var(--ok-lt); }
+    .g-easy .grade-label { color: var(--ok); }
+
+    /* ── Forecast chart ─────────────────────────────────────────────────── */
+    .fc-chart { display: flex; align-items: flex-end; gap: 6px; height: 86px; }
+    .fc-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; }
+    .fc-val { font-size: 10px; color: var(--ink-3); font-variant-numeric: tabular-nums; height: 12px; }
+    .fc-bar { width: 100%; background: var(--rose); border-radius: 4px 4px 0 0; opacity: 0.85; }
+    .fc-day { font-size: 10px; color: var(--ink-3); font-weight: 600; }
+
     /* ── Notes: type cards ──────────────────────────────────────────────── */
     .nt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
     .nt-card {
@@ -834,12 +894,6 @@ const VOCAB_CATEGORIES = {
   ],
 };
 
-const ALL_VOCAB = Object.values(VOCAB_CATEGORIES).flat();
-const CAT_ICONS = { '일상':'🌸', '사랑':'♡', '음식':'🍣', '여행':'✈', '숫자':'①', '감정':'☺', '전화':'📞', '날씨':'☀', '쇼핑':'🛍', '가족':'家' };
-
-function getTodayWord() {
-  return ALL_VOCAB[Math.floor(Date.now() / 86400000) % ALL_VOCAB.length];
-}
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -866,6 +920,7 @@ function makeNote(type, front, reading, back, extra) {
     type, front:(front||'').trim(), reading:(reading||'').trim(),
     back:(back||'').trim(), extra:(extra||'').trim(),
     box:1, ok:0, ng:0,
+    reps:0, ivl:0, ease:2.5, lapses:0, due:0,
   };
 }
 
@@ -931,6 +986,84 @@ function gradeNote(note, correct) {
     ng:  (note.ng||0) + (correct ? 0 : 1),
   };
 }
+/* ── Spaced repetition (SM-2 lite) ─────────────────────────────────────── */
+const DAY = 86400000;
+const AGAIN_DELAY = 600000;      /* 10 min */
+const MAX_IVL = 365;
+const DEFAULT_NEW_PER_DAY = 20;
+
+/* grade: 0 다시 · 1 어려움 · 2 보통 · 3 쉬움 */
+function schedule(n, grade) {
+  const now = Date.now();
+  let ivl = n.ivl || 0;
+  let ease = n.ease || 2.5;
+  const reps = (n.reps || 0) + 1;
+  let lapses = n.lapses || 0;
+
+  if (grade === 0) {
+    lapses += 1;
+    ease = Math.max(1.3, ease - 0.2);
+    return { ...n, ivl:0, ease, reps, lapses, due: now + AGAIN_DELAY, box:1 };
+  }
+  if (!n.reps || ivl === 0) {
+    ivl = grade === 3 ? 3 : 1;                 /* first graduation */
+  } else if (grade === 1) {
+    ease = Math.max(1.3, ease - 0.15);
+    ivl = Math.max(1, Math.round(ivl * 1.2));
+  } else if (grade === 2) {
+    ivl = Math.max(1, Math.round(ivl * ease));
+  } else {
+    ease = Math.min(3.0, ease + 0.15);
+    ivl = Math.max(1, Math.round(ivl * ease * 1.3));
+  }
+  ivl = Math.min(ivl, MAX_IVL);
+  return { ...n, ivl, ease, reps, lapses, due: now + ivl * DAY, box: boxFromIvl(ivl) };
+}
+function boxFromIvl(ivl) {
+  return ivl >= 60 ? 5 : ivl >= 21 ? 4 : ivl >= 7 ? 3 : ivl >= 1 ? 2 : 1;
+}
+function ivlLabel(ivl) {
+  if (!ivl) return '10분';
+  if (ivl < 30) return ivl + '일';
+  if (ivl < 365) return Math.round(ivl / 30) + '개월';
+  return '1년';
+}
+
+function todayStr(d) {
+  d = d || new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function daysBetween(a, b) {
+  return Math.round((new Date(b + 'T00:00') - new Date(a + 'T00:00')) / DAY);
+}
+
+/* Cards waiting right now, split into review and new */
+function dueSplit(notes, newLeft) {
+  const now = Date.now();
+  const review = notes.filter(n => n.reps && (n.due || 0) <= now);
+  const fresh  = notes.filter(n => !n.reps);
+  return { review, fresh: fresh.slice(0, Math.max(0, newLeft)), freshTotal: fresh.length };
+}
+
+/* How many cards come back on each of the next 7 days */
+function forecast(notes, days) {
+  const out = [];
+  const start = new Date(); start.setHours(0,0,0,0);
+  for (let i = 1; i <= days; i++) {
+    const from = start.getTime() + i * DAY;
+    out.push(notes.filter(n => n.reps && (n.due||0) >= from && (n.due||0) < from + DAY).length);
+  }
+  return out;
+}
+
+/* which drill a card gets, by how well it is known */
+function modeForNote(n) {
+  const r = n.reps || 0;
+  if (r === 0) return 'flash';
+  if (r < 4)   return 'choice';
+  return 'type';
+}
+
 /* Weakest cards first, so review time goes where it is needed */
 function studyOrder(notes) {
   return shuffle(notes).sort((x, y) => (x.box||1) - (y.box||1));
@@ -994,336 +1127,6 @@ function SetupScreen({ onComplete }) {
           onClick={() => onComplete(p1.trim(), p2.trim())}>
           일본어 여행 시작하기
         </button>
-      </div>
-    </div>
-  );
-}
-
-/* ── Home Tab ──────────────────────────────────────────────────────────── */
-function HomeTab({ state }) {
-  const todayWord = getTodayWord();
-  const totalVocab = ALL_VOCAB.length;
-
-  return (
-    <div className="content">
-      <div className="banner">
-        <div>
-          <div className="banner-text">오늘도 함께 공부해요</div>
-          <div className="banner-name">{state.p1} &amp; {state.p2}</div>
-        </div>
-        <div className="banner-ja pulse">二人</div>
-      </div>
-
-      <div className="stat-row">
-        {[
-          {num: state.streak||0, label:'연속 학습일', icon:'🔥'},
-          {num: state.learned?.length||0, label:'배운 단어', icon:'📚'},
-          {num: state.quizWins||0, label:'퀴즈 승리', icon:'🏆'},
-        ].map(s => (
-          <div key={s.label} className="stat-tile">
-            <div className="stat-num">{s.num}</div>
-            <div className="stat-label">{s.icon} {s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{marginBottom:12}}>
-        <div className="section-title">오늘의 단어</div>
-        <div className="today-card">
-          <div className="today-eyebrow">오늘 꼭 외워봐요</div>
-          <div className="today-kana">{todayWord.kana}</div>
-          <div className="today-korean">{todayWord.korean}</div>
-          <div className="today-romaji">{todayWord.romaji}</div>
-        </div>
-      </div>
-
-      <div style={{marginBottom:12}}>
-        <div className="section-title">파트너 진도</div>
-        <div className="card" style={{paddingBottom:14}}>
-          {[
-            {name:state.p1, learned:state.p1Learned?.length||0, isPlum:false},
-            {name:state.p2, learned:state.p2Learned?.length||0, isPlum:true},
-          ].map(p => (
-            <div key={p.name} className="partner-row">
-              <div className="partner-meta">
-                <span className="partner-name">{p.name}</span>
-                <span className="partner-count">{p.learned} / {totalVocab}</span>
-              </div>
-              <div className="prog-track">
-                <div className="prog-fill" style={{
-                  width:`${(p.learned/totalVocab)*100}%`,
-                  background: p.isPlum ? 'var(--plum)' : 'var(--rose)',
-                }}/>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="tip-card">
-        <div className="tip-label">오늘의 팁</div>
-        <div className="tip-text">
-          퀴즈 배틀에서 번갈아 문제를 풀어보세요. 경쟁하면서 배우면 기억에 두 배 오래 남아요.
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Vocab Tab ─────────────────────────────────────────────────────────── */
-function VocabTab({ state, setState }) {
-  const [activeCat, setActiveCat] = useState('일상');
-  const [flipped, setFlipped] = useState(null);
-  const [cardIdx, setCardIdx] = useState(0);
-  const [mode, setMode] = useState('grid');
-
-  const words = VOCAB_CATEGORIES[activeCat] || [];
-  const word = words[cardIdx];
-
-  const markLearned = (kana, partner) => {
-    const key = partner === 1 ? 'p1Learned' : 'p2Learned';
-    const current = state[key] || [];
-    if (current.includes(kana)) return;
-    const next = { ...state, [key]: [...current, kana] };
-    if (!state.learned?.includes(kana)) next.learned = [...(state.learned||[]), kana];
-    setState(next);
-  };
-
-  return (
-    <div className="content">
-      <div className="toggle-wrap">
-        <button className={`toggle-btn${mode==='grid'?' active':''}`} onClick={() => setMode('grid')}>목록 보기</button>
-        <button className={`toggle-btn${mode==='card'?' active':''}`}
-          onClick={() => { setMode('card'); setCardIdx(0); setFlipped(false); }}>카드 학습</button>
-      </div>
-
-      <div className="tabs" style={{marginBottom:14}}>
-        {Object.keys(VOCAB_CATEGORIES).map(cat => (
-          <button key={cat} className={`tab${activeCat===cat?' active':''}`}
-            onClick={() => { setActiveCat(cat); setCardIdx(0); setFlipped(false); }}>
-            {CAT_ICONS[cat]} {cat}
-          </button>
-        ))}
-      </div>
-
-      {mode === 'grid' ? (
-        <div className="vocab-grid">
-          {words.map((w, i) => {
-            const p1has = state.p1Learned?.includes(w.kana);
-            const p2has = state.p2Learned?.includes(w.kana);
-            return (
-              <div key={i} className="vocab-card" onClick={() => setFlipped(flipped===i?null:i)}>
-                <div className="vocab-kana">{w.kana}</div>
-                {flipped === i ? (
-                  <>
-                    <div className="vocab-korean" style={{fontWeight:600}}>{w.korean}</div>
-                    <div className="vocab-romaji">{w.romaji}</div>
-                    <div className="vocab-checks" style={{marginTop:8}}>
-                      <button className="btn btn-ghost-rose btn-sm"
-                        onClick={e=>{e.stopPropagation();markLearned(w.kana,1);}}>
-                        {p1has?'✓ ':''}{state.p1}
-                      </button>
-                      <button className="btn btn-ghost-plum btn-sm"
-                        onClick={e=>{e.stopPropagation();markLearned(w.kana,2);}}>
-                        {p2has?'✓ ':''}{state.p2}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="vocab-checks">
-                    {p1has && <span className="v-check">{state.p1}</span>}
-                    {p2has && <span className="v-check plum">{state.p2}</span>}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <>
-          <div className="fc-wrap" onClick={() => setFlipped(f=>!f)}>
-            <div className={`fc${flipped?' flipped':''}`} key={cardIdx}>
-              <div className="fc-face fc-front">
-                <div className="fc-hint">탭하면 뒤집어요</div>
-                <div className="fc-kana">{word?.kana}</div>
-                <div className="fc-tag">{activeCat}</div>
-              </div>
-              <div className="fc-face fc-back">
-                <div className="fc-romaji">{word?.romaji}</div>
-                <div className="fc-meaning">{word?.korean}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="fc-controls">
-            <button className="btn btn-ghost btn-sm"
-              onClick={() => { setCardIdx((cardIdx-1+words.length)%words.length); setFlipped(false); }}>
-              ← 이전
-            </button>
-            <span className="fc-count">{cardIdx+1} / {words.length}</span>
-            <button className="btn btn-ghost btn-sm"
-              onClick={() => { setCardIdx((cardIdx+1)%words.length); setFlipped(false); }}>
-              다음 →
-            </button>
-          </div>
-
-          {flipped && (
-            <div className="card-flat">
-              <div style={{fontSize:12,color:'var(--ink-3)',marginBottom:10,textAlign:'center',letterSpacing:'0.3px'}}>
-                외웠나요?
-              </div>
-              <div style={{display:'flex',gap:8}}>
-                <button className="btn btn-ghost-rose" style={{flex:1,padding:'12px'}}
-                  onClick={() => markLearned(word.kana, 1)}>
-                  {state.p1Learned?.includes(word?.kana)?'✓ 완료':state.p1+' 외웠어요'}
-                </button>
-                <button className="btn btn-ghost-plum" style={{flex:1,padding:'12px'}}
-                  onClick={() => markLearned(word.kana, 2)}>
-                  {state.p2Learned?.includes(word?.kana)?'✓ 완료':state.p2+' 외웠어요'}
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ── Quiz Tab ──────────────────────────────────────────────────────────── */
-function QuizTab({ state, setState, showToast }) {
-  const [phase, setPhase] = useState('intro');
-  const [player, setPlayer] = useState(1);
-  const [scores, setScores] = useState({1:0, 2:0});
-  const [round, setRound] = useState(0);
-  const ROUNDS = 10;
-  const [qs, setQs] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [answered, setAnswered] = useState(false);
-
-  const startQuiz = () => {
-    const pool = shuffle(ALL_VOCAB).slice(0, ROUNDS).map(word => ({
-      word, options: shuffle([word, ...shuffle(ALL_VOCAB.filter(w=>w.kana!==word.kana)).slice(0,3)])
-    }));
-    setQs(pool); setRound(0); setScores({1:0,2:0}); setPlayer(1);
-    setSelected(null); setAnswered(false); setPhase('playing');
-  };
-
-  const q = qs[round];
-
-  const handleAnswer = (opt) => {
-    if (answered) return;
-    setSelected(opt); setAnswered(true);
-    const correct = opt.kana === q.word.kana;
-    if (correct) { setScores(s=>({...s,[player]:s[player]+1})); showToast('정답! 🎉'); }
-    else showToast('아쉬워요 😅');
-    setTimeout(() => {
-      if (round+1 >= ROUNDS) { setPhase('result'); return; }
-      setRound(r=>r+1); setPlayer(p=>p===1?2:1); setSelected(null); setAnswered(false);
-    }, 1200);
-  };
-
-  if (phase === 'intro') return (
-    <div className="content">
-      <div className="section-title">커플 퀴즈 배틀</div>
-      <div className="card" style={{textAlign:'center',padding:'32px 24px'}}>
-        <div style={{fontSize:56,marginBottom:16}}>⚔️</div>
-        <div style={{fontSize:20,fontWeight:700,marginBottom:8,color:'var(--ink)'}}>
-          {state.p1} vs {state.p2}
-        </div>
-        <div style={{fontSize:14,color:'var(--ink-2)',marginBottom:28,lineHeight:1.7}}>
-          번갈아가며 총 {ROUNDS}문제를 풀어요.<br/>누가 더 많이 맞힐까요?
-        </div>
-        <button className="btn btn-primary" onClick={startQuiz}>배틀 시작</button>
-      </div>
-      <div className="card" style={{marginTop:0}}>
-        <div className="section-title" style={{marginBottom:12}}>게임 방법</div>
-        {['일본어 단어를 보고 뜻을 고르세요','두 분이 번갈아가며 문제를 풀어요','정답이면 1점, 10문제 후 높은 점수 승리'].map((t,i)=>(
-          <div key={i} className="quiz-rule">
-            <span className="quiz-rule-num">{i+1}</span>
-            <span className="quiz-rule-text">{t}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  if (phase === 'result') {
-    const winner = scores[1]>scores[2]?state.p1:scores[2]>scores[1]?state.p2:null;
-    return (
-      <div className="content">
-        <div className="section-title">결과 발표</div>
-        <div className="card" style={{textAlign:'center',padding:'28px 24px'}}>
-          <div style={{fontSize:52,marginBottom:12}}>{winner?'🏆':'🤝'}</div>
-          <div style={{fontSize:22,fontWeight:700,marginBottom:6,color:'var(--ink)'}}>
-            {winner ? `${winner} 승리!` : '무승부!'}
-          </div>
-          <div style={{fontSize:14,color:'var(--ink-3)',marginBottom:24}}>
-            {winner ? '축하해요!' : '두 분 다 수고하셨어요!'}
-          </div>
-          <div className="result-vs" style={{marginBottom:28}}>
-            <div className="result-score-block">
-              <div className="result-score-name">{state.p1}</div>
-              <div className="result-score-num">{scores[1]}</div>
-            </div>
-            <div className="result-vs-sep">VS</div>
-            <div className="result-score-block">
-              <div className="result-score-name">{state.p2}</div>
-              <div className="result-score-num plum">{scores[2]}</div>
-            </div>
-          </div>
-          <div style={{display:'flex',gap:8}}>
-            <button className="btn btn-ghost" style={{flex:1,padding:'13px'}}
-              onClick={() => { setState({...state,quizWins:(state.quizWins||0)+(winner?1:0)}); setPhase('intro'); }}>
-              홈으로
-            </button>
-            <button className="btn btn-primary" style={{flex:1,padding:'13px'}}
-              onClick={() => { setState({...state,quizWins:(state.quizWins||0)+(winner?1:0)}); startQuiz(); }}>
-              다시 도전
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const isP1 = player === 1;
-  return (
-    <div className="content">
-      <div className={`quiz-scorebar${isP1?'':' plum'}`}>
-        <div className="quiz-score-block">
-          <div className="quiz-score-name">{state.p1}</div>
-          <div className="quiz-score-num">{scores[1]}</div>
-        </div>
-        <div className="quiz-mid">
-          <div>{round+1} / {ROUNDS}</div>
-          <div style={{marginTop:2}}>{isP1?state.p1:state.p2}의 차례</div>
-        </div>
-        <div className="quiz-score-block">
-          <div className="quiz-score-name">{state.p2}</div>
-          <div className="quiz-score-num">{scores[2]}</div>
-        </div>
-      </div>
-
-      <div className="quiz-q-card">
-        <div className="quiz-eyebrow">이 단어의 뜻은?</div>
-        <div className="quiz-kana">{q?.word.kana}</div>
-        <div className="quiz-romaji">{q?.word.romaji}</div>
-      </div>
-
-      <div className="quiz-grid">
-        {q?.options.map((opt, i) => {
-          let cls = 'quiz-opt';
-          if (answered) {
-            if (opt.kana === q.word.kana) cls += ' correct';
-            else if (selected?.kana === opt.kana) cls += ' wrong';
-          }
-          return (
-            <button key={i} className={cls} disabled={answered} onClick={() => handleAnswer(opt)}>
-              {opt.korean}
-            </button>
-          );
-        })}
       </div>
     </div>
   );
@@ -1810,6 +1613,12 @@ const STUDY_DECKS = [
       ['～てしまう','て형 + しまう','~해 버리다 (완료·후회)','忘れてしまった 잊어버렸다'],
       ['～ていく / ～てくる','て형 + いく / くる','~해 가다 / ~해 오다','持っていく 가져가다'],
     ],
+  },
+  {
+    id:'seikatsu', name:'생활 어휘', sub:'일상 · 사랑 · 음식 · 여행 · 숫자 · 감정 · 전화 · 날씨 · 쇼핑 · 가족', date:null, base:true,
+    word: Object.entries(VOCAB_CATEGORIES).flatMap(([cat, ws]) =>
+      ws.map(w => [w.kana, w.romaji, w.korean, cat])),
+    kanji: [], convo: [], grammar: [],
   },
   {
     id:'kazu', name:'숫자 · 수량', sub:'큰 수 · 가격 · 세는 말', date:null, base:true,
@@ -2412,11 +2221,21 @@ const DECK_INDEX = (() => {
   return m;
 })();
 function backfillDecks(notes) {
-  if (!notes || !notes.some(n => n.deck === undefined || n.lv === undefined)) return notes;
+  if (!notes || !notes.some(n => n.deck === undefined || n.lv === undefined || n.reps === undefined)) return notes;
   return notes.map(n => {
     const next = { ...n };
     if (next.deck === undefined) next.deck = DECK_INDEX[deckKey(n.type, n.front, n.extra)] || '';
     if (next.lv === undefined) next.lv = cardLevel(n.type, n.front);
+    if (next.reps === undefined) {
+      /* carry old Leitner progress over: a known card keeps its standing
+         but comes due now, then follows the real schedule from there */
+      const box = next.box || 1;
+      next.reps   = box > 1 ? box - 1 : 0;
+      next.ivl    = [0, 0, 1, 7, 21, 60][box] || 0;
+      next.ease   = 2.5;
+      next.lapses = 0;
+      next.due    = next.reps ? Date.now() : 0;
+    }
     return next;
   });
 }
@@ -3061,7 +2880,8 @@ function NotesTab({ state, setState, showToast }) {
   const [mode, setMode] = useState(null);
   const [scope, setScope] = useState('all');
   const [deckScope, setDeckScope] = useState('all');
-  const [coreOnly, setCoreOnly] = useState(true);
+  const coreOnly = state.coreOnly !== false;
+  const setCoreOnly = (v) => setState({ ...state, coreOnly: typeof v === 'function' ? v(coreOnly) : v });
   const [result, setResult] = useState(null);
   const [runId, setRunId] = useState(0);
 
@@ -3214,10 +3034,309 @@ function NotesTab({ state, setState, showToast }) {
   );
 }
 
+/* ── Study session: one queue, drill picked per card ───────────────────── */
+const GRADES = [
+  { g:0, label:'다시',   cls:'g-again' },
+  { g:1, label:'어려움', cls:'g-hard'  },
+  { g:2, label:'보통',   cls:'g-good'  },
+  { g:3, label:'쉬움',   cls:'g-easy'  },
+];
+
+function StudySession({ queue: initial, pool, onGrade, onDone, onExit, title }) {
+  const [queue, setQueue] = useState(initial);
+  const [i, setI] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [sel, setSel] = useState(null);
+  const [val, setVal] = useState('');
+  const [judged, setJudged] = useState(null);
+  const [stats, setStats] = useState({ done:0, again:0 });
+  const timer = useTimeoutRef();
+
+  const n = queue[i];
+  const mode = n ? modeForNote(n) : null;
+
+  const opts = useMemo(() => {
+    if (!n || mode !== 'choice') return [];
+    const others = shuffle(pool.filter(x => x.id !== n.id && normAns(x.back) !== normAns(n.back))).slice(0, 3);
+    return shuffle([n, ...others]);
+  }, [n && n.id, mode]);
+
+  if (!n) return null;
+
+  const advance = (grade) => {
+    onGrade(n.id, grade);
+    const next = { done: stats.done + 1, again: stats.again + (grade === 0 ? 1 : 0) };
+    setStats(next);
+    /* a card you got wrong comes back later in the same session */
+    const q = grade === 0 ? [...queue, n] : queue;
+    if (i + 1 >= q.length) { onDone(next); return; }
+    setQueue(q); setI(i + 1);
+    setRevealed(false); setSel(null); setVal(''); setJudged(null);
+  };
+
+  const pickChoice = (o) => {
+    if (sel) return;
+    setSel(o);
+    const ok = o.id === n.id;
+    timer.current = setTimeout(() => advance(ok ? 2 : 0), ok ? 450 : 1300);
+  };
+
+  const submitTyped = (e) => {
+    e.preventDefault();
+    if (judged !== null || !val.trim()) return;
+    setJudged(answerMatches(val, n.back));
+  };
+
+  const left = queue.length - i;
+  const header = (
+    <div className="rv-bar">
+      <button className="btn btn-ghost btn-sm" onClick={onExit}>← 그만</button>
+      <span className="fc-count">
+        <span className="combo">{NOTE_TYPES[n.type].label}</span> · 남은 {left}장
+      </span>
+    </div>
+  );
+
+  /* ── new card: show it, then rate it ── */
+  if (mode === 'flash') {
+    return (
+      <div className="content">
+        {header}
+        <div className="new-badge">처음 보는 카드</div>
+        <div className="fc-wrap" onClick={() => setRevealed(true)}>
+          <div className={`fc${revealed ? ' flipped' : ''}`} key={n.id}>
+            <div className="fc-face fc-front">
+              <div className="fc-hint">탭하면 뜻이 나와요</div>
+              <div className="fc-kana" style={{fontSize: n.front.length > 8 ? 26 : 50}}>{n.front}</div>
+              {n.reading && <div className="fc-tag">{n.reading}</div>}
+            </div>
+            <div className="fc-face fc-back">
+              <div style={{fontSize: n.back.length > 14 ? 17 : 22, fontWeight:700, padding:'0 18px', textAlign:'center'}}>{n.back}</div>
+              {n.extra && <div className="fc-tag" style={{marginTop:10, padding:'0 20px', textAlign:'center'}}>{n.extra}</div>}
+            </div>
+          </div>
+        </div>
+        {revealed ? <GradeRow note={n} onGrade={advance} /> : (
+          <div className="tip-card" style={{textAlign:'center'}}>
+            <div className="tip-text">뜻을 떠올려 본 다음 카드를 탭하세요.</div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ── familiar card: pick the meaning ── */
+  if (mode === 'choice') {
+    return (
+      <div className="content">
+        {header}
+        <div className="quiz-q-card">
+          <div className="quiz-eyebrow">알맞은 뜻은?</div>
+          <div className={`rv-q${n.front.length > 10 ? ' sm' : ''}`}>{n.front}</div>
+          {n.reading && <div className="rv-sub">{n.reading}</div>}
+        </div>
+        <div className="quiz-grid">
+          {opts.map(o => {
+            let cls = 'quiz-opt';
+            if (sel) {
+              if (o.id === n.id) cls += ' correct';
+              else if (sel.id === o.id) cls += ' wrong';
+            }
+            return <button key={o.id} className={cls} disabled={!!sel} onClick={() => pickChoice(o)}>{o.back}</button>;
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── well known: write it from memory ── */
+  return (
+    <div className="content">
+      {header}
+      <div className="quiz-q-card">
+        <div className="quiz-eyebrow">뜻을 입력하세요</div>
+        <div className={`rv-q${n.front.length > 10 ? ' sm' : ''}`}>{n.front}</div>
+        {n.reading && <div className="rv-sub">{n.reading}</div>}
+      </div>
+      {judged === null ? (
+        <form onSubmit={submitTyped}>
+          <input className="field-input" value={val} autoFocus placeholder="뜻을 한국어로"
+            onChange={e => setVal(e.target.value)} />
+          <button className="btn btn-primary" style={{marginTop:10}} type="submit" disabled={!val.trim()}>확인</button>
+        </form>
+      ) : (
+        <>
+          <div className={`ans-box ${judged ? 'ok' : 'ng'}`}>
+            <div className="ans-label">{judged ? '정답이에요' : '정답은'}</div>
+            <div className="ans-val">{n.back}</div>
+            {!judged && <div style={{fontSize:12, marginTop:6, opacity:0.8}}>입력: {val}</div>}
+          </div>
+          {judged
+            ? <GradeRow note={n} onGrade={advance} hideAgain />
+            : (
+              <>
+                <button className="btn btn-primary" onClick={() => advance(0)}>다시 볼게요</button>
+                <button className="btn btn-ghost" style={{width:'100%', marginTop:8, padding:12}}
+                  onClick={() => advance(2)}>사실 맞았어요</button>
+              </>
+            )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* the four scheduling buttons, each showing when the card returns */
+function GradeRow({ note, onGrade, hideAgain }) {
+  const rows = hideAgain ? GRADES.slice(1) : GRADES;
+  return (
+    <div className="grade-row">
+      {rows.map(({ g, label, cls }) => (
+        <button key={g} className={`grade-btn ${cls}`} onClick={() => onGrade(g)}>
+          <span className="grade-label">{label}</span>
+          <span className="grade-when">{ivlLabel(schedule(note, g).ivl)}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ── Today tab ─────────────────────────────────────────────────────────── */
+function TodayTab({ state, setState, showToast, studying, setStudying }) {
+  const notes = (state.notes || []).filter(n => !state.coreOnly || n.lv !== 'lit');
+  const today = todayStr();
+  const daily = state.daily && state.daily.date === today
+    ? state.daily : { date: today, newDone: 0, reviewDone: 0 };
+  const perDay = state.newPerDay || DEFAULT_NEW_PER_DAY;
+  const { review, fresh, freshTotal } = dueSplit(notes, perDay - daily.newDone);
+  const waiting = review.length + fresh.length;
+
+  const grade = (id, g) => {
+    const target = (state.notes || []).find(x => x.id === id);
+    const wasNew = !target.reps;
+    const d = state.daily && state.daily.date === today
+      ? { ...state.daily } : { date: today, newDone: 0, reviewDone: 0 };
+    if (wasNew) d.newDone += 1; else d.reviewDone += 1;
+
+    let streak = state.streak || 0;
+    const last = state.lastStudy;
+    if (last !== today) streak = last && daysBetween(last, today) === 1 ? streak + 1 : 1;
+
+    setState({
+      ...state,
+      notes: state.notes.map(x => x.id === id ? schedule(x, g) : x),
+      daily: d, streak, lastStudy: today,
+    });
+  };
+
+  if (studying) {
+    return (
+      <StudySession
+        key={studying.id}
+        queue={studying.queue}
+        pool={notes}
+        onGrade={grade}
+        onExit={() => setStudying(null)}
+        onDone={(s) => { setStudying(null); showToast(`${s.done}장 완료 ✓`); }}
+      />
+    );
+  }
+
+  const start = () => {
+    const q = shuffle([...review, ...fresh]);
+    if (!q.length) return;
+    setStudying({ id: Date.now(), queue: q });
+  };
+
+  const fc = forecast(notes, 7);
+  const dowNames = ['일','월','화','수','목','금','토'];
+  const maxFc = Math.max(1, ...fc);
+
+  if (!notes.length) {
+    return (
+      <div className="content">
+        <div className="card">
+          <div className="empty-wrap">
+            <div className="empty-ja">筆</div>
+            <div className="empty-text">
+              아직 카드가 없어요.<br/>수업 탭에서 노트를 불러오면 여기에 복습이 뜹니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="content">
+      <div className="today-hero">
+        <div className="hero-eyebrow">오늘 복습</div>
+        <div className="hero-num">{waiting}</div>
+        <div className="hero-split">
+          <span>복습 {review.length}장</span>
+          <span className="hero-dot" />
+          <span>새 카드 {fresh.length}장</span>
+        </div>
+        <button className="btn hero-btn" disabled={!waiting} onClick={start}>
+          {waiting ? '시작하기' : '오늘은 다 했어요 ✓'}
+        </button>
+      </div>
+
+      <div className="stat-row">
+        <div className="stat-tile">
+          <div className="stat-num">{state.streak || 0}</div>
+          <div className="stat-label">연속일</div>
+        </div>
+        <div className="stat-tile">
+          <div className="stat-num">{daily.newDone + daily.reviewDone}</div>
+          <div className="stat-label">오늘 한 장</div>
+        </div>
+        <div className="stat-tile">
+          <div className="stat-num">{notes.filter(n => (n.ivl||0) >= 21).length}</div>
+          <div className="stat-label">장기 기억</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="section-title" style={{marginBottom:12}}>앞으로 7일</div>
+        <div className="fc-chart">
+          {fc.map((c, k) => {
+            const d = new Date(Date.now() + (k+1) * DAY);
+            return (
+              <div className="fc-col" key={k}>
+                <span className="fc-val">{c || ''}</span>
+                <div className="fc-bar" style={{height: `${Math.max(3, c / maxFc * 54)}px`}} />
+                <span className="fc-day">{dowNames[d.getDay()]}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="card">
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10}}>
+          <span style={{fontSize:14, fontWeight:600}}>하루 새 카드</span>
+          <span style={{fontFamily:'Georgia,serif', fontSize:20, color:'var(--rose)'}}>{perDay}장</span>
+        </div>
+        <div className="tabs">
+          {[10, 20, 30, 40].map(v => (
+            <button key={v} className={`tab${perDay === v ? ' active' : ''}`}
+              onClick={() => setState({ ...state, newPerDay: v })}>{v}장</button>
+          ))}
+        </div>
+        <div className="tip-text" style={{marginTop:10}}>
+          안 배운 카드가 {freshTotal}장 남아 있어요. 하루 {perDay}장이면 약 {Math.ceil(freshTotal / perDay)}일이면 다 봅니다.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main App ──────────────────────────────────────────────────────────── */
 function App() {
   const [appState, setAppState] = useState(null);
-  const [tab, setTab] = useState('home');
+  const [tab, setTab] = useState('today');
+  const [studying, setStudying] = useState(null);
   const [toast, setToast] = useState('');
 
   useEffect(() => {
@@ -3234,23 +3353,19 @@ function App() {
 
   if (!appState?.p1) return (
     <SetupScreen onComplete={(p1, p2) => {
-      updateState({ p1, p2, streak:1, learned:[], p1Learned:[], p2Learned:[], quizWins:0, hiragana:[], katakana:[], notes:[] });
+      updateState({ p1, p2, streak:0, learned:[], p1Learned:[], p2Learned:[], quizWins:0, hiragana:[], katakana:[], notes:[] });
     }} />
   );
 
   const tabs = [
-    { id:'home',  icon:'🏠', label:'홈' },
-    { id:'vocab', icon:'📖', label:'어휘' },
-    { id:'notes', icon:'📝', label:'내 노트' },
-    { id:'quiz',  icon:'⚔️',  label:'퀴즈' },
-    { id:'kana',  icon:'あ',  label:'문자' },
+    { id:'today',  icon:'🔥', label:'오늘' },
+    { id:'notes',  icon:'📚', label:'수업' },
+    { id:'kana',   icon:'あ',  label:'문자' },
   ];
 
   const HEADER_TITLES = {
-    home:  { main:'우리 둘이', accent:'일본어' },
-    vocab: { main:'어휘', accent:'학습' },
-    notes: { main:'내', accent:'노트' },
-    quiz:  { main:'퀴즈', accent:'배틀' },
+    today: { main:'오늘', accent:'복습' },
+    notes: { main:'수업', accent:'노트' },
     kana:  { main:'가나', accent:'あ ア' },
   };
   const ht = HEADER_TITLES[tab];
@@ -3272,15 +3387,15 @@ function App() {
         </div>
       </header>
 
-      {tab==='home'     && <HomeTab     state={appState} setState={updateState} />}
-      {tab==='vocab'    && <VocabTab    state={appState} setState={updateState} />}
-      {tab==='notes'    && <NotesTab    state={appState} setState={updateState} showToast={showToast} />}
-      {tab==='quiz'     && <QuizTab     state={appState} setState={updateState} showToast={showToast} />}
-      {tab==='kana'     && <KanaTab     state={appState} setState={updateState} showToast={showToast} />}
+      {tab==='today'  && <TodayTab state={appState} setState={updateState} showToast={showToast}
+                            studying={studying} setStudying={setStudying} />}
+      {tab==='notes'  && <NotesTab state={appState} setState={updateState} showToast={showToast} />}
+      {tab==='kana'   && <KanaTab  state={appState} setState={updateState} showToast={showToast} />}
 
       <nav className="nav">
         {tabs.map(t => (
-          <button key={t.id} className={`nav-btn${tab===t.id?' active':''}`} onClick={() => setTab(t.id)}>
+          <button key={t.id} className={`nav-btn${tab===t.id?' active':''}`}
+            onClick={() => { if (t.id !== 'today') setStudying(null); setTab(t.id); }}>
             <span className="nav-icon">{t.icon}</span>
             <span className="nav-label">{t.label}</span>
           </button>
