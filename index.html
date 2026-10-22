@@ -531,6 +531,13 @@
     .nt-name { font-size: 14px; font-weight: 700; color: var(--ink); }
     .nt-count { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-variant-numeric: tabular-nums; }
 
+    .lit-tag {
+      font-size: 9.5px; font-weight: 700; letter-spacing: 0.3px;
+      padding: 2px 6px; border-radius: 6px; margin-left: 6px;
+      background: var(--plum-lt); color: var(--plum);
+      vertical-align: middle; font-family: -apple-system, sans-serif;
+    }
+
     .lesson-date {
       display: flex; align-items: center; gap: 7px;
       font-size: 12px; font-weight: 700; letter-spacing: 0.4px;
@@ -1440,6 +1447,157 @@ function BackBar({ onBack, right }) {
 /* 각 행: [앞면, 읽기, 뜻, 메모] */
 const STUDY_DECKS = [
   {
+    id:'kiso', name:'기초 필수', sub:'JLPT N5·N4 최빈출', date:null, base:true,
+    word: [
+      ['人','ひと','사람','一人(ひとり) 혼자'],
+      ['時間','じかん','시간','時間がない 시간이 없다'],
+      ['今日','きょう','오늘','今日は 오늘은'],
+      ['今','いま','지금','今から 지금부터'],
+      ['家','いえ','집','家に帰る 집에 가다'],
+      ['学校','がっこう','학교',''],
+      ['会社','かいしゃ','회사','会社員 회사원'],
+      ['仕事','しごと','일, 업무','仕事中 일하는 중'],
+      ['友達','ともだち','친구',''],
+      ['お金','おかね','돈','お金がかかる 돈이 들다'],
+      ['店','みせ','가게',''],
+      ['電車','でんしゃ','전철','電車に乗る 전철을 타다'],
+      ['水','みず','물',''],
+      ['道','みち','길','道を聞く 길을 묻다'],
+      ['料理','りょうり','요리','料理を作る 요리를 만들다'],
+      ['買う','かう','사다','買い物 쇼핑'],
+      ['行く','いく','가다','行ってきます 다녀오겠습니다'],
+      ['来る','くる','오다','来てください 와 주세요'],
+      ['帰る','かえる','돌아가다, 돌아오다','家に帰る'],
+      ['作る','つくる','만들다',''],
+      ['使う','つかう','사용하다',''],
+      ['待つ','まつ','기다리다','待ってください 기다려 주세요'],
+      ['持つ','もつ','가지다, 들다','持っていく 가져가다'],
+      ['入る','はいる','들어가다','入ってもいい？ 들어가도 돼?'],
+      ['出る','でる','나가다, 나오다','家を出る 집을 나서다'],
+      ['始める','はじめる','시작하다','始めましょう 시작합시다'],
+      ['終わる','おわる','끝나다','仕事が終わる 일이 끝나다'],
+      ['分かる','わかる','알다, 이해하다','分かりません 모르겠어요'],
+      ['考える','かんがえる','생각하다',''],
+      ['話す','はなす','이야기하다','日本語を話す 일본어를 하다'],
+      ['聞く','きく','듣다, 묻다','道を聞く 길을 묻다'],
+      ['大きい','おおきい','크다',''],
+      ['新しい','あたらしい','새롭다','新しい店 새 가게'],
+      ['早い','はやい','이르다, 빠르다','早く 빨리'],
+      ['多い','おおい','많다','人が多い 사람이 많다'],
+      ['少ない','すくない','적다',''],
+    ],
+    kanji: [
+      ['日','ニチ・ジツ / ひ・か','날 일','今日(きょう) 오늘, 日本(にほん) 일본'],
+      ['本','ホン / もと','책, 근본 본','本(ほん) 책, 日本 일본'],
+      ['人','ジン・ニン / ひと','사람 인','一人(ひとり) 혼자, 人気(にんき) 인기'],
+      ['年','ネン / とし','해 년','今年(ことし) 올해, 来年(らいねん) 내년'],
+      ['大','ダイ・タイ / おお-きい','큰 대','大学(だいがく) 대학, 大丈夫 괜찮다'],
+      ['中','チュウ / なか','가운데 중','中(なか) 안, 仕事中 일하는 중'],
+      ['上','ジョウ / うえ・あ-げる','위 상','上(うえ) 위, 上手(じょうず) 잘함'],
+      ['下','カ・ゲ / した・さ-げる','아래 하','下(した) 아래, 地下(ちか) 지하'],
+      ['入','ニュウ / はい-る・い-れる','들 입','入る 들어가다, 入口(いりぐち) 입구'],
+      ['行','コウ / い-く・おこな-う','갈 행','行く 가다, 旅行(りょこう) 여행'],
+      ['来','ライ / く-る','올 래','来る 오다, 来週(らいしゅう) 다음 주'],
+      ['分','ブン・フン / わ-かる・わ-ける','나눌 분','分かる 알다, 五分(ごふん) 5분'],
+      ['今','コン / いま','이제 금','今(いま) 지금, 今日 오늘'],
+      ['何','カ / なに・なん','어찌 하','何(なに) 무엇, 何時(なんじ) 몇 시'],
+      ['生','セイ / い-きる・う-まれる','날 생','学生(がくせい) 학생, 先生 선생님'],
+      ['学','ガク / まな-ぶ','배울 학','学校 학교, 学生 학생'],
+      ['校','コウ','학교 교','学校(がっこう) 학교'],
+      ['先','セン / さき','먼저 선','先生(せんせい) 선생님, 先に 먼저'],
+      ['間','カン / あいだ','사이 간','時間(じかん) 시간, 人間(にんげん) 인간'],
+      ['国','コク / くに','나라 국','国(くに) 나라, 外国(がいこく) 외국'],
+      ['語','ゴ / かた-る','말씀 어','日本語(にほんご) 일본어'],
+      ['会','カイ / あ-う','모일 회','会社(かいしゃ) 회사, 会う 만나다'],
+      ['社','シャ / やしろ','모일 사','会社 회사, 社長(しゃちょう) 사장'],
+      ['話','ワ / はな-す','말씀 화','話す 이야기하다, 電話(でんわ) 전화'],
+      ['書','ショ / か-く','글 서','書く 쓰다, 辞書(じしょ) 사전'],
+      ['読','ドク / よ-む','읽을 독','読む 읽다'],
+      ['飲','イン / の-む','마실 음','飲む 마시다, 飲み物 음료'],
+      ['買','バイ / か-う','살 매','買う 사다, 買い物 쇼핑'],
+      ['高','コウ / たか-い','높을 고','高い 비싸다·높다'],
+      ['安','アン / やす-い','편안할 안','安い 싸다, 安心(あんしん) 안심'],
+      ['長','チョウ / なが-い','길 장','長い 길다, 社長 사장'],
+      ['電','デン','번개 전','電車(でんしゃ) 전철, 電話 전화'],
+      ['車','シャ / くるま','수레 차','電車 전철, 車(くるま) 자동차'],
+      ['駅','エキ','역 역','駅(えき) 역'],
+      ['毎','マイ','매양 매','毎日(まいにち) 매일, 毎週 매주'],
+      ['友','ユウ / とも','벗 우','友達(ともだち) 친구'],
+      ['家','カ・ケ / いえ','집 가','家(いえ) 집, 家族(かぞく) 가족'],
+      ['道','ドウ / みち','길 도','道(みち) 길, 北海道 홋카이도'],
+    ],
+    convo: [
+      ['おはようございます','おはようございます','좋은 아침입니다','친한 사이는 おはよう'],
+      ['はじめまして','はじめまして','처음 뵙겠습니다',''],
+      ['よろしくお願いします','よろしく おねがいします','잘 부탁드립니다','가장 많이 쓰는 인사'],
+      ['お疲れさまです','おつかれさまです','수고하셨습니다','직장에서 매일 씀'],
+      ['いただきます','いただきます','잘 먹겠습니다',''],
+      ['ごちそうさまでした','ごちそうさまでした','잘 먹었습니다',''],
+      ['いってきます','いってきます','다녀오겠습니다',''],
+      ['いってらっしゃい','いってらっしゃい','다녀오세요',''],
+      ['ただいま','ただいま','다녀왔습니다',''],
+      ['おかえりなさい','おかえりなさい','어서 와',''],
+      ['すみません、ちょっといいですか','すみません、ちょっといいですか','저기요, 잠깐 괜찮으세요?',''],
+      ['ちょっと待ってください','ちょっと まってください','잠깐만 기다려 주세요',''],
+      ['もう一度お願いします','もういちど おねがいします','한 번 더 말씀해 주세요','못 알아들었을 때'],
+      ['ゆっくり話してください','ゆっくり はなしてください','천천히 말해 주세요',''],
+      ['分かりません','わかりません','모르겠어요',''],
+      ['大丈夫ですか','だいじょうぶですか','괜찮으세요?',''],
+      ['どうしましたか','どうしましたか','무슨 일이에요?',''],
+      ['これ、いくらですか','これ、いくらですか','이거 얼마예요?',''],
+      ['トイレはどこですか','トイレは どこですか','화장실은 어디예요?',''],
+      ['写真を撮ってもいいですか','しゃしんを とっても いいですか','사진 찍어도 될까요?',''],
+      ['ありがとうございます','ありがとうございます','감사합니다',''],
+      ['どういたしまして','どういたしまして','천만에요',''],
+      ['申し訳ありません','もうしわけありません','죄송합니다','すみません보다 정중'],
+      ['失礼します','しつれいします','실례하겠습니다','방에 들어갈 때·나올 때'],
+      ['お先に失礼します','おさきに しつれいします','먼저 가 보겠습니다','퇴근할 때'],
+      ['また今度','また こんど','다음에 또 봐요',''],
+      ['気をつけて','きを つけて','조심해서 가',''],
+      ['助かりました','たすかりました','덕분에 살았어요',''],
+    ],
+    grammar: [
+      ['～です','명사 + です','~입니다','学生です 학생입니다'],
+      ['～じゃありません','명사 + じゃありません','~이 아닙니다','学生じゃありません'],
+      ['～ます / ～ません','동사 ます형','~합니다 / ~하지 않습니다','行きます / 行きません'],
+      ['～ました','동사 ます형 + ました','~했습니다','食べました 먹었습니다'],
+      ['～てください','て형 + ください','~해 주세요','待ってください 기다려 주세요'],
+      ['～てもいいですか','て형 + もいいですか','~해도 될까요?','入ってもいいですか'],
+      ['～てはいけません','て형 + はいけません','~하면 안 됩니다','入ってはいけません'],
+      ['～たことがある','た형 + ことがある','~한 적이 있다','行ったことがある 가 본 적이 있다'],
+      ['～ことができる','기본형 + ことができる','~할 수 있다','話すことができる'],
+      ['동사 가능형','書く → 書ける','~할 수 있다','日本語が話せる 일본어를 할 수 있다'],
+      ['～なければならない','ない형 + なければならない','~해야 한다','行かなければならない'],
+      ['～なくてもいい','ない형 + なくてもいい','~하지 않아도 된다','来なくてもいい'],
+      ['～ほうがいい','た형 + ほうがいい','~하는 편이 좋다','休んだほうがいい 쉬는 게 좋다'],
+      ['～つもり','기본형 + つもり','~할 작정이다','行くつもりです 갈 생각이에요'],
+      ['～と思う','보통형 + と思う','~라고 생각한다','いいと思う 좋다고 생각해'],
+      ['～そうです (전문)','보통형 + そうです','~라고 한다 (들은 말)','雨が降るそうです 비가 온대요'],
+      ['～そう (양태)','ます형·형용사 어간 + そう','~할 것 같다 (보기에)','おいしそう 맛있어 보여'],
+      ['～みたい','명사·보통형 + みたい','~같다','子どもみたい 아이 같아'],
+      ['～ようです','보통형 + ようです','~인 것 같다 (근거 있는 추측)',''],
+      ['～かもしれない','보통형 + かもしれない','~일지도 모른다','雨かもしれない'],
+      ['～はずです','보통형 + はずです','~할 것이다 (당연한 예상)','来るはずです 올 거예요'],
+      ['～なら','명사·보통형 + なら','~라면','日本語なら分かる 일본어라면 알아'],
+      ['～たら','た형 + ら','~하면 (가정)','雨が降ったら 비가 오면'],
+      ['～から (이유)','보통형 + から','~니까, ~때문에','高いから買わない 비싸니까 안 사'],
+      ['～ので','보통형 + ので','~라서 (정중·부드러움)','用事があるので 볼일이 있어서'],
+      ['～けれども','보통형 + けれども','~지만','高いけれどもおいしい'],
+      ['～前に','기본형 + 前に','~하기 전에','寝る前に 자기 전에'],
+      ['～後で','た형 + 後で','~한 후에','食べた後で 먹은 후에'],
+      ['～とき','기본형·た형 + とき','~할 때 / ~했을 때','子どものとき 어렸을 때'],
+      ['～ために','기본형·명사の + ために','~을 위해','健康のために 건강을 위해'],
+      ['～ように','기본형·ない형 + ように','~하도록','忘れないように 잊지 않도록'],
+      ['수동형 ～れる/～られる','書く → 書かれる','~되다, ~당하다','先生にほめられた 선생님께 칭찬받았다'],
+      ['사역형 ～せる/～させる','行く → 行かせる','~하게 하다','子どもに行かせる'],
+      ['～てあげる','て형 + あげる','(내가 남에게) ~해 주다','教えてあげる 가르쳐 줄게'],
+      ['～てもらう','て형 + もらう','(남에게) ~해 받다','教えてもらう 가르침을 받다'],
+      ['～ておく','て형 + おく','미리 ~해 두다','買っておく 사 두다'],
+      ['～てしまう','て형 + しまう','~해 버리다 (완료·후회)','忘れてしまった 잊어버렸다'],
+      ['～ていく / ～てくる','て형 + いく / くる','~해 가다 / ~해 오다','持っていく 가져가다'],
+    ],
+  },
+  {
     id:'omoidasu', name:'時には思い出すでしょう', sub:'이별 노래 가사', date:'2026-10-06',
     word: [
       ['時には','ときには','때로는, 가끔은','時 때 + に + は'],
@@ -1778,11 +1936,30 @@ const STUDY_DECKS = [
   },
 ];
 
+/* 가사·시에서 온 문학적 표현과 저빈도 한자 — 실용 필터에서 빠짐 */
+const LIT_CARDS = new Set([
+  'word|逢う','word|山越え','word|彼方','word|遥か','word|惹かれる',
+  'word|オッチョンジ','word|やるせない','word|胸の内','word|むさぼり食べる',
+  'kanji|逢','kanji|遥','kanji|惹',
+  'convo|時には思い出すでしょう。','convo|冷たい人だけど','convo|あんなに愛した思い出を',
+  'convo|忘れはしないでしょう。','convo|青い月を見上げ','convo|一人過ごす夜は',
+  'convo|誓った言葉を繰り返し','convo|逢いたくなるでしょう。','convo|山越え遠くに',
+  'convo|別れても','convo|海の彼方遥か','convo|離れても',
+  'convo|黄色いシャツ着た無口な男','convo|オッチョンジ惹かれる','convo|オッチョンジ好きなの',
+  'convo|男らしくて笑顔がやさしい','convo|夢にまで見るわたし変なの',
+  'convo|ああやるせないこの胸のうち','convo|あああの人は知ってか知らずか','convo|彼に惹かれる。',
+  'convo|あかい葉っぱがひらひらと','convo|秋の風にゆれている',
+  'convo|ゆっくり歩けば見えてくる','convo|小さな秋のしあわせが',
+  'grammar|～はしない','grammar|동사 연용형 (중지법)','grammar|～てか～ずか','grammar|～とあれば',
+]);
+function cardLevel(type, front) { return LIT_CARDS.has(type + '|' + front) ? 'lit' : 'core'; }
+
 function deckNotes(d) {
   const out = [];
   TYPE_KEYS.forEach(t => (d[t] || []).forEach(r => {
     const n = makeNote(t, r[0], r[1], r[2], r[3] || '');
     n.deck = d.id;
+    n.lv = cardLevel(t, r[0]);
     out.push(n);
   }));
   return out;
@@ -1797,9 +1974,13 @@ const DECK_INDEX = (() => {
   return m;
 })();
 function backfillDecks(notes) {
-  if (!notes || !notes.some(n => n.deck === undefined)) return notes;
-  return notes.map(n => n.deck !== undefined ? n
-    : { ...n, deck: DECK_INDEX[deckKey(n.type, n.front, n.extra)] || '' });
+  if (!notes || !notes.some(n => n.deck === undefined || n.lv === undefined)) return notes;
+  return notes.map(n => {
+    const next = { ...n };
+    if (next.deck === undefined) next.deck = DECK_INDEX[deckKey(n.type, n.front, n.extra)] || '';
+    if (next.lv === undefined) next.lv = cardLevel(n.type, n.front);
+    return next;
+  });
 }
 function deckCount(d) {
   return TYPE_KEYS.reduce((n, t) => n + ((d[t] || []).length), 0);
@@ -1818,7 +1999,11 @@ function LessonsView({ notes, loaded, onLoad, onPick, onBack }) {
     const g = groups.find(x => x.date === d.date);
     if (g) g.decks.push(d); else groups.push({ date:d.date, decks:[d] });
   });
-  groups.sort((a, b) => b.date.localeCompare(a.date));
+  groups.sort((a, b) => {
+    if (!a.date) return -1;
+    if (!b.date) return 1;
+    return b.date.localeCompare(a.date);
+  });
 
   const stats = (id) => {
     const ns = notes.filter(n => n.deck === id);
@@ -1842,7 +2027,7 @@ function LessonsView({ notes, loaded, onLoad, onPick, onBack }) {
         <div key={g.date} style={{marginBottom:18}}>
           <div className="lesson-date">
             <span className="lesson-dot" />
-            {fmtLessonDate(g.date)}
+            {g.date ? fmtLessonDate(g.date) : '기초 필수 · 날짜 무관'}
           </div>
 
           {g.decks.map(d => {
@@ -2413,7 +2598,10 @@ function NotesManage({ notes, onDel, onBack }) {
           {list.map(n => (
             <div className="note-li" key={n.id}>
               <div style={{minWidth:0, flex:1}}>
-                <div className="note-front">{n.front}</div>
+                <div className="note-front">
+                  {n.front}
+                  {n.lv === 'lit' && <span className="lit-tag">문학</span>}
+                </div>
                 {n.reading && <div className="note-read">{n.reading}</div>}
                 <div className="note-back">{n.back}</div>
                 {n.extra && <div className="note-read" style={{marginTop:3}}>{n.extra}</div>}
@@ -2434,6 +2622,7 @@ function NotesTab({ state, setState, showToast }) {
   const [mode, setMode] = useState(null);
   const [scope, setScope] = useState('all');
   const [deckScope, setDeckScope] = useState('all');
+  const [coreOnly, setCoreOnly] = useState(true);
   const [result, setResult] = useState(null);
   const [runId, setRunId] = useState(0);
 
@@ -2443,9 +2632,11 @@ function NotesTab({ state, setState, showToast }) {
     const seen = new Set(notes.map(n => n.deck).filter(Boolean));
     return STUDY_DECKS.filter(d => seen.has(d.id)).map(d => d.id);
   }, [notes]);
-  const pool = notes.filter(n =>
+  const inScope = notes.filter(n =>
     (scope === 'all' || n.type === scope) &&
     (deckScope === 'all' || n.deck === deckScope));
+  const litCount = inScope.filter(n => n.lv === 'lit').length;
+  const pool = coreOnly ? inScope.filter(n => n.lv !== 'lit') : inScope;
   const lesson = deckScope === 'all' ? null : STUDY_DECKS.find(d => d.id === deckScope);
   const scopeLabel = [lesson && lesson.name, scope === 'all' ? '전체' : NOTE_TYPES[scope].label]
     .filter(Boolean).join(' · ');
@@ -2509,27 +2700,30 @@ function NotesTab({ state, setState, showToast }) {
     );
   }
 
-  const weak = notes.filter(n => (n.box||1) < 3).length;
-  const mastered = notes.filter(n => (n.box||1) >= MAX_BOX).length;
+  const shown = coreOnly ? notes.filter(n => n.lv !== 'lit') : notes;
+  const weak = shown.filter(n => (n.box||1) < 3).length;
+  const mastered = shown.filter(n => (n.box||1) >= MAX_BOX).length;
 
   return (
     <div className="content">
       <div className="pill-row">
-        <span className="stat-pill">📚 전체 {notes.length}장</span>
+        <span className="stat-pill">📚 전체 {shown.length}장</span>
         <span className="stat-pill">🔥 복습 필요 {weak}장</span>
         <span className="stat-pill">⭐ 완성 {mastered}장</span>
       </div>
 
       {lesson && (
         <button className="scope-all on" style={{marginBottom:12}} onClick={() => setDeckScope('all')}>
-          📅 {fmtLessonDate(lesson.date)} · {lesson.name} — 탭하면 전체로
+          📅 {lesson.date ? fmtLessonDate(lesson.date) + ' · ' : ''}{lesson.name} — 탭하면 전체로
         </button>
       )}
 
       <div className="section-title">무엇을 복습할까요</div>
       <div className="nt-grid">
         {TYPE_KEYS.map(k => {
-          const c = notes.filter(n => n.type === k && (deckScope === 'all' || n.deck === deckScope)).length;
+          const c = notes.filter(n => n.type === k
+            && (deckScope === 'all' || n.deck === deckScope)
+            && (!coreOnly || n.lv !== 'lit')).length;
           return (
             <button key={k} className={`nt-card${scope === k ? ' on' : ''}`}
               onClick={() => setScope(scope === k ? 'all' : k)}>
@@ -2544,6 +2738,15 @@ function NotesTab({ state, setState, showToast }) {
         onClick={() => setScope('all')}>
         {scope === 'all' ? '✓ ' : ''}{lesson ? '이 수업' : '전체'} 모든 유형 함께 복습
       </button>
+
+      {litCount > 0 && (
+        <button className={`scope-all${coreOnly ? ' on' : ''}`} style={{marginBottom:16}}
+          onClick={() => setCoreOnly(c => !c)}>
+          {coreOnly
+            ? `⭐ 실용 우선 · 가사·문학 표현 ${litCount}장 제외됨`
+            : `📖 가사·문학 표현 ${litCount}장 포함 중`}
+        </button>
+      )}
 
       <div className="section-title">복습 방법 · {scopeLabel} {pool.length}장</div>
       {REVIEW_MODES.map(m => (
