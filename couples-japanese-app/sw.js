@@ -1,4 +1,4 @@
-const CACHE = 'jp-couple-v10';
+const CACHE = 'jp-couple-v11';
 const ASSETS = [
   './',
   './index.html',
@@ -23,7 +23,26 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => caches.match('./index.html')))
-  );
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  const isApp = req.mode === 'navigate'
+    || url.origin === self.location.origin
+    && (url.pathname.endsWith('/') || url.pathname.endsWith('.html') || url.pathname.endsWith('.json'));
+
+  if (isApp) {
+    /* network first, so a new lesson shows up as soon as it is deployed;
+       the cache is only the offline fallback */
+    e.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
+    );
+  } else {
+    /* the CDN libraries never change, so serve them from cache */
+    e.respondWith(caches.match(req).then(c => c || fetch(req)));
+  }
 });

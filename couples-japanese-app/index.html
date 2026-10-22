@@ -1142,7 +1142,7 @@ function VocabTab({ state, setState }) {
       ) : (
         <>
           <div className="fc-wrap" onClick={() => setFlipped(f=>!f)}>
-            <div className={`fc${flipped?' flipped':''}`}>
+            <div className={`fc${flipped?' flipped':''}`} key={cardIdx}>
               <div className="fc-face fc-front">
                 <div className="fc-hint">탭하면 뒤집어요</div>
                 <div className="fc-kana">{word?.kana}</div>
@@ -1370,7 +1370,9 @@ function KanaFlash({ rows, learned, onMark, onExit, label }) {
       </div>
 
       <div className="fc-wrap" onClick={() => setFlip(f => !f)}>
-        <div className={`fc${flip ? ' flipped' : ''}`}>
+        {/* key={i}: a new card mounts unflipped, so advancing never plays the
+            flip-back animation that would reveal the next answer first */}
+        <div className={`fc${flip ? ' flipped' : ''}`} key={i}>
           <div className="fc-face fc-front">
             <div className="fc-hint">탭하면 뒤집어요</div>
             <div className="fc-kana" style={{fontSize:96}}>{r.char}</div>
@@ -2028,6 +2030,56 @@ const STUDY_DECKS = [
     ],
   },
   {
+    id:'shun', name:'旬の味覚', sub:'제철 음식 · 가을 먹거리', date:'2026-10-13',
+    word: [
+      ['旬','しゅん','제철','今が旬だよ 지금이 제철이야'],
+      ['味覚','みかく','미각, 별미','旬の味覚 제철의 별미'],
+      ['果物','くだもの','과일','旬の果物 제철 과일'],
+      ['魚','さかな','생선, 물고기','旬の魚 제철 생선'],
+      ['食物','しょくもつ','음식','旬の食物 제철 음식'],
+      ['先週','せんしゅう','지난주','毎週(まいしゅう) 매주'],
+      ['まつたけ','まつたけ','송이버섯','松茸'],
+      ['やきいも','やきいも','군고구마','焼き芋 · サツマイモ로 만듦'],
+      ['ぎんなん','ぎんなん','은행 (열매)','銀杏 · 노트에는 きんなん으로 적혀 있지만 ぎんなん이 맞아요'],
+      ['かき','かき','감','柿'],
+      ['なし','なし','배','梨'],
+      ['ぶどう','ぶどう','포도','葡萄'],
+      ['いちじく','いちじく','무화과','無花果'],
+      ['もも','もも','복숭아','桃'],
+      ['りんご','りんご','사과','林檎'],
+      ['ざくろ','ざくろ','석류','石榴'],
+      ['さんま','さんま','꽁치','秋刀魚 · 가을 생선의 대표'],
+      ['さば','さば','고등어','鯖'],
+      ['さけ','さけ','연어','鮭 · 술(酒)도 さけ라 악센트로 구분'],
+      ['たちうお','たちうお','갈치','太刀魚'],
+      ['働き盛り','はたらきざかり','한창 일할 나이',''],
+      ['遊び盛り','あそびざかり','한창 놀 나이',''],
+    ],
+    kanji: [
+      ['旬','シュン・ジュン','열흘 순','旬(しゅん) 제철, 上旬(じょうじゅん) 상순'],
+      ['味','ミ / あじ','맛 미','味覚(みかく) 미각, 味(あじ) 맛'],
+      ['果','カ / は-たす','실과 과','果物(くだもの) 과일, 結果(けっか) 결과'],
+      ['物','ブツ・モツ / もの','물건 물','果物 과일, 食物 음식, 物(もの) 것'],
+      ['魚','ギョ / さかな・うお','물고기 어','魚(さかな) 생선, 金魚(きんぎょ) 금붕어'],
+      ['週','シュウ','주일 주','先週(せんしゅう) 지난주, 毎週 매주'],
+      ['働','ドウ / はたら-く','일할 동','働く 일하다, 働き盛り 한창 일할 나이'],
+      ['遊','ユウ / あそ-ぶ','놀 유','遊ぶ 놀다, 遊び盛り 한창 놀 나이'],
+    ],
+    convo: [
+      ['今が旬だよ。','いまが しゅんだよ','지금이 제철이야.',''],
+      ['旬の味覚','しゅんの みかく','제철의 별미',''],
+      ['旬の果物','しゅんの くだもの','제철 과일',''],
+      ['旬の魚','しゅんの さかな','제철 생선',''],
+      ['旬の食物','しゅんの しょくもつ','제철 음식',''],
+      ['食べたい。','たべたい','먹고 싶다.',''],
+    ],
+    grammar: [
+      ['～盛り（ざかり）','ます형·명사 + 盛り','한창 ~할 때 · ~할 나이','食べ盛り 한창 먹을 나이 / 働き盛り 한창 일할 나이 / 遊び盛り 한창 놀 나이'],
+      ['連濁（れんだく）','합성어에서 뒷말 첫소리가 탁음으로','さかり → ざかり 처럼 소리가 바뀜','食べ + 盛り(さかり) → 食べ盛り(たべざかり)'],
+      ['旬の + 명사','명사 + の + 명사','제철 ~','旬の果物 제철 과일 / 旬の魚 제철 생선'],
+    ],
+  },
+  {
     id:'shokuyoku', name:'盛 · 食欲の秋', sub:'다이어트 회화', date:'2026-10-13',
     word: [
       ['盛大','せいだい','성대한, 규모가 크고 화려한','盛 성할 성'],
@@ -2413,7 +2465,8 @@ function ReviewFlash({ pool, grade, onFinish, onBack }) {
       </div>
 
       <div className="fc-wrap" onClick={() => setFlip(f => !f)}>
-        <div className={`fc${flip ? ' flipped' : ''}`}>
+        {/* key={i}: see KanaFlash — avoids flashing the next card's answer */}
+        <div className={`fc${flip ? ' flipped' : ''}`} key={i}>
           <div className="fc-face fc-front">
             <div className="fc-hint">탭하면 뒤집어요</div>
             <div className="fc-kana" style={{fontSize: n.front.length > 8 ? 28 : 52}}>{n.front}</div>
