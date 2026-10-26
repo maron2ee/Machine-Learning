@@ -619,6 +619,12 @@
       flex-shrink: 0; font-weight: 600;
     }
 
+    .save-warn {
+      background: var(--err-lt); color: var(--err);
+      font-size: 12px; line-height: 1.6; font-weight: 600;
+      padding: 11px 16px; border-bottom: 1px solid var(--border);
+    }
+
     /* ── Today hero ─────────────────────────────────────────────────────── */
     .today-hero {
       background: var(--rose); color: #fff;
@@ -1278,7 +1284,33 @@ function studyOrder(notes) {
   return shuffle(notes).sort((x, y) => (x.box||1) - (y.box||1));
 }
 function loadState() { try { return JSON.parse(localStorage.getItem('jpCouple')||'null'); } catch { return null; } }
-function saveState(s) { localStorage.setItem('jpCouple', JSON.stringify(s)); }
+function saveState(s) {
+  try { localStorage.setItem('jpCouple', JSON.stringify(s)); return true; }
+  catch (e) { return false; }   /* private mode, or storage full */
+}
+
+/* ── Backup ────────────────────────────────────────────────────────────── */
+/* A home-screen web app keeps its own storage, separate from Safari, and
+   deleting the icon takes it with it. These let progress move between them. */
+function exportBackup(state) {
+  try {
+    const blob = new Blob([JSON.stringify(state)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `일본어노트-${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return true;
+  } catch (e) { return false; }
+}
+function parseBackup(text) {
+  const d = JSON.parse(text);
+  if (!d || typeof d !== 'object' || !Array.isArray(d.notes)) throw new Error('형식이 아니에요');
+  return d;
+}
 
 /* ── Setup SVG mark ────────────────────────────────────────────────────── */
 function CoupleMark() {
@@ -1300,10 +1332,22 @@ function Toast({ msg }) {
 }
 
 /* ── Setup Screen ──────────────────────────────────────────────────────── */
-function SetupScreen({ onComplete }) {
+function SetupScreen({ onComplete, onRestore, showToast }) {
   const [p1, setP1] = useState('');
   const [p2, setP2] = useState('');
+  const fileRef = useRef(null);
   const ok = p1.trim() && p2.trim();
+  const onFile = (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try { onRestore(parseBackup(String(r.result || ''))); showToast('진도를 되살렸어요 ✓'); }
+      catch (err) { showToast('백업 파일이 아니에요'); }
+    };
+    r.readAsText(f, 'utf-8');
+  };
   return (
     <div className="setup-wrap">
       <div className="setup-mark" style={{color:'var(--rose)'}}>
@@ -1336,6 +1380,21 @@ function SetupScreen({ onComplete }) {
           onClick={() => onComplete(p1.trim(), p2.trim())}>
           일본어 여행 시작하기
         </button>
+
+        <button className="btn btn-ghost" style={{width:'100%', marginTop:8, padding:12}}
+          onClick={() => onComplete('나', '파트너')}>
+          이름 없이 시작하기
+        </button>
+        <button className="btn btn-ghost" style={{width:'100%', marginTop:8, padding:12}}
+          onClick={() => fileRef.current && fileRef.current.click()}>
+          📥 백업 파일로 되살리기
+        </button>
+        <input ref={fileRef} type="file" accept=".json,application/json"
+          style={{display:'none'}} onChange={onFile} />
+        <div className="tip-text" style={{marginTop:12, textAlign:'center', fontSize:12}}>
+          이 화면이 또 보인다면 저장이 지워진 거예요.<br/>
+          백업 파일이 있으면 진도를 그대로 되살릴 수 있어요.
+        </div>
       </div>
     </div>
   );
@@ -3443,11 +3502,17 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
             </div>
           </div>
         </div>
-        {seen ? <GradeRow note={n} dir={dir} onGrade={advance} /> : (
-          <div className="tip-card" style={{textAlign:'center'}}>
-            <div className="tip-text">답을 떠올려 본 다음 카드를 탭하세요.</div>
-          </div>
-        )}
+        {seen ? <GradeRow note={n} dir={dir} onGrade={advance} />
+          : isListen ? (
+            /* the speaker covers the middle of the card, so revealing needs
+               a button of its own rather than a tap on the card */
+            <button className="btn btn-primary"
+              onClick={() => { setRevealed(true); setSeen(true); }}>정답 보기</button>
+          ) : (
+            <div className="tip-card" style={{textAlign:'center'}}>
+              <div className="tip-text">답을 떠올려 본 다음 카드를 탭하세요.</div>
+            </div>
+          )}
       </div>
     );
   }
@@ -3543,6 +3608,66 @@ function GradeRow({ note, dir, onGrade, hideAgain }) {
           <span className="grade-when">{ivlLabel(previewIvl(note, g, dir))}</span>
         </button>
       ))}
+    </div>
+  );
+}
+
+/* ── Names & backup ────────────────────────────────────────────────────── */
+function SettingsCard({ state, setState, showToast }) {
+  const [p1, setP1] = useState(state.p1 || '');
+  const [p2, setP2] = useState(state.p2 || '');
+  const fileRef = useRef(null);
+  const dirty = p1.trim() !== (state.p1 || '') || p2.trim() !== (state.p2 || '');
+
+  const onFile = (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      let data;
+      try { data = parseBackup(String(r.result || '')); }
+      catch (err) { showToast('백업 파일이 아니에요'); return; }
+      const n = (data.notes || []).length;
+      if (!window.confirm(`백업의 ${n}장으로 되돌릴까요?\n지금 기기의 진도는 덮어써집니다.`)) return;
+      setState({ ...data, notes: backfillDecks(data.notes || []) });
+      showToast(`${n}장 되살렸어요 ✓`);
+    };
+    r.readAsText(f, 'utf-8');
+  };
+
+  return (
+    <div className="card">
+      <div className="section-title" style={{marginBottom:12}}>이름 · 백업</div>
+
+      <div style={{display:'flex', gap:8, marginBottom:8}}>
+        <input className="field-input" style={{fontSize:14, padding:'11px 13px'}}
+          value={p1} placeholder="이름 1" onChange={e => setP1(e.target.value)} />
+        <input className="field-input" style={{fontSize:14, padding:'11px 13px'}}
+          value={p2} placeholder="이름 2" onChange={e => setP2(e.target.value)} />
+      </div>
+      <button className="btn btn-ghost-rose" style={{width:'100%', padding:11, marginBottom:16}}
+        disabled={!dirty || !p1.trim() || !p2.trim()}
+        onClick={() => { setState({ ...state, p1: p1.trim(), p2: p2.trim() }); showToast('이름 바꿨어요 ✓'); }}>
+        {dirty ? '이름 저장' : '저장됨'}
+      </button>
+
+      <div style={{display:'flex', gap:8}}>
+        <button className="btn btn-ghost" style={{flex:1, padding:12}}
+          onClick={() => showToast(exportBackup(state) ? '백업 파일을 저장했어요 ✓' : '저장하지 못했어요')}>
+          📤 백업 저장
+        </button>
+        <button className="btn btn-ghost" style={{flex:1, padding:12}}
+          onClick={() => fileRef.current && fileRef.current.click()}>
+          📥 백업 불러오기
+        </button>
+      </div>
+      <input ref={fileRef} type="file" accept=".json,application/json"
+        style={{display:'none'}} onChange={onFile} />
+      <div className="tip-text" style={{marginTop:10}}>
+        홈 화면 앱과 사파리는 저장 공간이 따로예요. 홈 화면 아이콘을 지우면 그 안의 진도도 같이 사라지니,
+        가끔 백업을 저장해 두면 기기를 옮기거나 둘이 진도를 맞출 때도 쓸 수 있어요.
+      </div>
     </div>
   );
 }
@@ -3755,6 +3880,8 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
         </div>
       </div>
 
+      <SettingsCard state={state} setState={setState} showToast={showToast} />
+
       <div className="card">
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10}}>
           <span style={{fontSize:14, fontWeight:600}}>하루 새 카드</span>
@@ -3789,7 +3916,11 @@ function App() {
     if (s?.p1 && s?.p2) setAppState({ ...s, notes: backfillDecks(s.notes || []) });
   }, []);
 
-  const updateState = useCallback(next => { setAppState(next); saveState(next); }, []);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const updateState = useCallback(next => {
+    setAppState(next);
+    if (!saveState(next)) setSaveFailed(true);
+  }, []);
 
   const showToast = msg => {
     setToast(msg);
@@ -3797,9 +3928,13 @@ function App() {
   };
 
   if (!appState?.p1) return (
-    <SetupScreen onComplete={(p1, p2) => {
-      updateState({ p1, p2, streak:0, learned:[], p1Learned:[], p2Learned:[], quizWins:0, hiragana:[], katakana:[], notes:[] });
-    }} />
+    <SetupScreen
+      onComplete={(p1, p2) => {
+        updateState({ p1, p2, streak:0, learned:[], p1Learned:[], p2Learned:[],
+                      quizWins:0, hiragana:[], katakana:[], notes:[] });
+      }}
+      onRestore={(data) => { updateState({ ...data, notes: backfillDecks(data.notes || []) }); }}
+      showToast={showToast} />
   );
 
   const tabs = [
@@ -3818,6 +3953,13 @@ function App() {
   return (
     <div className="app">
       <Toast msg={toast} />
+
+      {saveFailed && (
+        <div className="save-warn">
+          진도가 이 기기에 저장되지 않고 있어요. 사생활 보호 모드이거나 저장 공간이 가득 찬 걸 수 있어요.
+          오늘 탭에서 백업을 저장해 두세요.
+        </div>
+      )}
 
       <header className="header">
         <div>
