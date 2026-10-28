@@ -625,6 +625,12 @@
       padding: 11px 16px; border-bottom: 1px solid var(--border);
     }
 
+    .backup-nudge {
+      background: var(--rose-lt); color: var(--rose);
+      font-size: 12px; line-height: 1.6; font-weight: 600;
+      border-radius: 10px; padding: 10px 12px; margin-bottom: 14px;
+    }
+
     /* ── Today hero ─────────────────────────────────────────────────────── */
     .today-hero {
       background: var(--rose); color: #fff;
@@ -3618,6 +3624,9 @@ function SettingsCard({ state, setState, showToast }) {
   const [p2, setP2] = useState(state.p2 || '');
   const fileRef = useRef(null);
   const dirty = p1.trim() !== (state.p1 || '') || p2.trim() !== (state.p2 || '');
+  const cards = (state.notes || []).length;
+  const stale = cards > 0 &&
+    (!state.lastBackup || daysBetween(state.lastBackup, todayStr()) >= 7);
 
   const onFile = (e) => {
     const f = e.target.files && e.target.files[0];
@@ -3640,6 +3649,14 @@ function SettingsCard({ state, setState, showToast }) {
     <div className="card">
       <div className="section-title" style={{marginBottom:12}}>이름 · 백업</div>
 
+      {stale && (
+        <div className="backup-nudge">
+          {state.lastBackup
+            ? `마지막 백업이 ${daysBetween(state.lastBackup, todayStr())}일 전이에요.`
+            : '아직 백업한 적이 없어요.'} 폰을 바꾸거나 홈 화면 아이콘을 지우면 진도가 사라집니다.
+        </div>
+      )}
+
       <div style={{display:'flex', gap:8, marginBottom:8}}>
         <input className="field-input" style={{fontSize:14, padding:'11px 13px'}}
           value={p1} placeholder="이름 1" onChange={e => setP1(e.target.value)} />
@@ -3654,7 +3671,12 @@ function SettingsCard({ state, setState, showToast }) {
 
       <div style={{display:'flex', gap:8}}>
         <button className="btn btn-ghost" style={{flex:1, padding:12}}
-          onClick={() => showToast(exportBackup(state) ? '백업 파일을 저장했어요 ✓' : '저장하지 못했어요')}>
+          onClick={() => {
+            if (exportBackup(state)) {
+              setState({ ...state, lastBackup: todayStr() });
+              showToast('백업 파일을 저장했어요 ✓');
+            } else showToast('저장하지 못했어요');
+          }}>
           📤 백업 저장
         </button>
         <button className="btn btn-ghost" style={{flex:1, padding:12}}
@@ -3912,6 +3934,9 @@ function App() {
   const [toast, setToast] = useState('');
 
   useEffect(() => {
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().catch(() => {});
+    }
     const s = loadState();
     if (s?.p1 && s?.p2) setAppState({ ...s, notes: backfillDecks(s.notes || []) });
   }, []);
