@@ -228,6 +228,7 @@
     /* ── Pill tabs ──────────────────────────────────────────────────────── */
     .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
     .tabs::-webkit-scrollbar { display: none; }
+    .tabs.wrap { flex-wrap: wrap; overflow-x: visible; }
     .tab {
       white-space: nowrap; padding: 7px 15px; border-radius: 20px;
       font-size: 13px; font-weight: 600;
@@ -466,6 +467,8 @@
     .hira-grid {
       display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
     }
+    .hira-grid.c3 { grid-template-columns: repeat(3, 1fr); }
+
     .hira-cell {
       background: var(--surface-2); border: 1px solid var(--border);
       border-radius: 10px; padding: 10px 4px;
@@ -591,6 +594,40 @@
     .ord-chip:active { transform: scale(0.94); }
     .ord-chip.placed { background: var(--rose); border-color: var(--rose); color: #fff; }
     .ord-empty { font-size: 12px; color: var(--ink-3); align-self: center; margin: auto; }
+
+    /* ── Search ─────────────────────────────────────────────────────────── */
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 0 12px; margin-bottom: 16px;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .search-box:focus-within { border-color: var(--rose); box-shadow: 0 0 0 3px var(--rose-lt); }
+    .search-icon { font-size: 15px; opacity: 0.6; }
+    .search-input {
+      flex: 1; min-width: 0; border: none; outline: none; background: none;
+      font-size: 16px; color: var(--ink); padding: 14px 0;
+    }
+    .search-input::placeholder { color: var(--ink-3); }
+    .search-clear { font-size: 13px; color: var(--ink-3); padding: 6px; }
+    .search-row {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+      text-align: left; background: none;
+    }
+    .search-row:last-child { border-bottom: none; }
+    .search-front {
+      display: block; font-family: Georgia, 'Hiragino Mincho ProN', serif;
+      font-size: 20px; color: var(--ink); line-height: 1.3;
+    }
+    .search-read { display: block; font-size: 12px; color: var(--ink-3); margin-top: 1px; }
+    .search-back { display: block; font-size: 13px; color: var(--ink-2); margin-top: 3px; line-height: 1.4; }
+    .search-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .pin-dot, .have-dot {
+      font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 6px;
+    }
+    .pin-dot  { background: var(--ok-lt); color: var(--ok); }
+    .have-dot { background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--border); }
 
     /* ── Direction chips & rows ─────────────────────────────────────────── */
     .dir-chip {
@@ -1250,12 +1287,21 @@ function entriesOf(notes, dirs) {
 }
 
 /* Cards waiting right now, split into review and new */
-function dueSplit(notes, newLeft, dirs) {
+function dueSplit(notes, newLeft, dirs, pinned) {
   const now = Date.now();
+  const pin = pinned || [];
   const all = entriesOf(notes, dirs);
   const review = all.filter(e => sget(e.n, e.dir, 'reps') && (sget(e.n, e.dir, 'due') || 0) <= now);
-  const fresh  = all.filter(e => !sget(e.n, e.dir, 'reps'));
-  return { review, fresh: fresh.slice(0, Math.max(0, newLeft)), freshTotal: fresh.length, total: all.length };
+  const freshAll = all.filter(e => !sget(e.n, e.dir, 'reps'));
+  /* cards the user searched for today are wanted now, whatever the daily cap */
+  const pinnedFresh = freshAll.filter(e => pin.includes(e.n.id));
+  const rest = freshAll.filter(e => !pin.includes(e.n.id));
+  return {
+    review,
+    fresh: [...pinnedFresh, ...rest.slice(0, Math.max(0, newLeft))],
+    freshTotal: freshAll.length,
+    total: all.length,
+  };
 }
 
 /* How many cards come back on each of the next 7 days */
@@ -1406,15 +1452,68 @@ function SetupScreen({ onComplete, onRestore, showToast }) {
   );
 }
 
-/* ── Kana helpers ──────────────────────────────────────────────────────── */
-const HIRA_CHARS = new Set(HIRAGANA.filter(h => h.char).map(h => h.char));
-function kanaKeyOf(char) { return HIRA_CHARS.has(char) ? 'hiragana' : 'katakana'; }
+/* ── Kana: more than the basic 46 ──────────────────────────────────────── */
+/* [hiragana, katakana, romaji, rare?]  ぢ/づ sound exactly like じ/ず, so a
+   romaji question could not tell them apart: they stay in the chart only. */
+const DAKU_ROWS = [
+  ['が','ガ','ga'],['ぎ','ギ','gi'],['ぐ','グ','gu'],['げ','ゲ','ge'],['ご','ゴ','go'],
+  ['ざ','ザ','za'],['じ','ジ','ji'],['ず','ズ','zu'],['ぜ','ゼ','ze'],['ぞ','ゾ','zo'],
+  ['だ','ダ','da'],['ぢ','ヂ','ji',1],['づ','ヅ','zu',1],['で','デ','de'],['ど','ド','do'],
+  ['ば','バ','ba'],['び','ビ','bi'],['ぶ','ブ','bu'],['べ','ベ','be'],['ぼ','ボ','bo'],
+  ['ぱ','パ','pa'],['ぴ','ピ','pi'],['ぷ','プ','pu'],['ぺ','ペ','pe'],['ぽ','ポ','po'],
+];
+const YOON_ROWS = [
+  ['きゃ','キャ','kya'],['きゅ','キュ','kyu'],['きょ','キョ','kyo'],
+  ['ぎゃ','ギャ','gya'],['ぎゅ','ギュ','gyu'],['ぎょ','ギョ','gyo'],
+  ['しゃ','シャ','sha'],['しゅ','シュ','shu'],['しょ','ショ','sho'],
+  ['じゃ','ジャ','ja'],['じゅ','ジュ','ju'],['じょ','ジョ','jo'],
+  ['ちゃ','チャ','cha'],['ちゅ','チュ','chu'],['ちょ','チョ','cho'],
+  ['にゃ','ニャ','nya'],['にゅ','ニュ','nyu'],['にょ','ニョ','nyo'],
+  ['ひゃ','ヒャ','hya'],['ひゅ','ヒュ','hyu'],['ひょ','ヒョ','hyo'],
+  ['びゃ','ビャ','bya'],['びゅ','ビュ','byu'],['びょ','ビョ','byo'],
+  ['ぴゃ','ピャ','pya'],['ぴゅ','ピュ','pyu'],['ぴょ','ピョ','pyo'],
+  ['みゃ','ミャ','mya'],['みゅ','ミュ','myu'],['みょ','ミョ','myo'],
+  ['りゃ','リャ','rya'],['りゅ','リュ','ryu'],['りょ','リョ','ryo'],
+];
+/* pairs that get mixed up most, drilled as one small set */
+const CONFUSING = {
+  hira: ['ぬ','め','わ','れ','ね','さ','き','る','ろ','は','ほ','い','り'],
+  kata: ['シ','ツ','ソ','ン','ク','ケ','ウ','ワ','コ','ユ','ス','ヌ','ノ','メ'],
+};
+
+const KANA_RANGES = [
+  { id:'basic',     label:'기본' },
+  { id:'daku',      label:'탁음·반탁음' },
+  { id:'yoon',      label:'요음' },
+  { id:'confusing', label:'헷갈리는 글자' },
+  { id:'all',       label:'전체' },
+];
+
+/* script: 'hira' | 'kata'. Returns [{char, rom, rare?}] */
+function kanaRows(script, range) {
+  const h = script === 'hira';
+  const basic = (h ? HIRAGANA : KATAKANA).filter(x => x.char);
+  const idx = h ? 0 : 1;
+  const conv = (rows) => rows.map(r => ({ char: r[idx], rom: r[2], rare: !!r[3] }));
+  if (range === 'basic') return basic;
+  if (range === 'daku')  return conv(DAKU_ROWS);
+  if (range === 'yoon')  return conv(YOON_ROWS);
+  if (range === 'confusing') return basic.filter(x => CONFUSING[script].includes(x.char));
+  return [...basic, ...conv(DAKU_ROWS), ...conv(YOON_ROWS)];
+}
+function kanaKeyOf(char) { return /[぀-ゟ]/.test(char) ? 'hiragana' : 'katakana'; }
 
 const KANA_MODES = [
   { id:'chart', label:'표' },
   { id:'flash', label:'플래시카드' },
   { id:'quiz',  label:'퀴즈' },
 ];
+const QDIRS = [
+  { id:'mix', label:'섞어서' },
+  { id:'k2r', label:'글자→소리' },
+  { id:'r2k', label:'소리→글자' },
+];
+const QCOUNTS = [10, 20, 0];     /* 0 = 전부 */
 
 /* ── Kana: flashcard ───────────────────────────────────────────────────── */
 function KanaFlash({ rows, learned, onMark, onExit, label }) {
@@ -1426,13 +1525,15 @@ function KanaFlash({ rows, learned, onMark, onExit, label }) {
   const [i, setI] = useState(0);
   const [flip, setFlip] = useState(false);
   const [right, setRight] = useState(0);
+  const wrong = useRef([]);
   const r = queue[i];
   if (!r) return null;
 
   const answer = (ok) => {
     onMark(r.char, ok);
+    if (!ok) wrong.current.push(r);
     const n = right + (ok ? 1 : 0);
-    if (i + 1 >= queue.length) { showKanaDone(onExit, n, queue.length); return; }
+    if (i + 1 >= queue.length) { onExit({ right:n, total:queue.length, wrong:wrong.current }); return; }
     setRight(n); setI(i + 1); setFlip(false);
   };
 
@@ -1452,7 +1553,7 @@ function KanaFlash({ rows, learned, onMark, onExit, label }) {
         <div className={`fc${flip ? ' flipped' : ''}`} key={i}>
           <div className="fc-face fc-front">
             <div className="fc-hint">탭하면 뒤집어요</div>
-            <div className="fc-kana" style={{fontSize:96}}>{r.char}</div>
+            <div className="fc-kana" style={{fontSize: r.char.length > 1 ? 72 : 96}}>{r.char}</div>
           </div>
           <div className="fc-face fc-back">
             <div className="fc-romaji" style={{fontSize:52}}>{r.rom}</div>
@@ -1476,20 +1577,22 @@ function KanaFlash({ rows, learned, onMark, onExit, label }) {
 }
 
 /* ── Kana: quiz ────────────────────────────────────────────────────────── */
-function KanaQuiz({ rows, onMark, onExit, label }) {
-  const total = Math.min(10, rows.length);
-  const [queue] = useState(() =>
-    shuffle(rows).slice(0, total).map(r => ({ r, dir: Math.random() < 0.5 ? 'k2r' : 'r2k' })));
+/* `pool` supplies the wrong answers; `asks` is what is actually asked. */
+function KanaQuiz({ pool, asks, qdir, onMark, onExit, label }) {
+  const [queue] = useState(() => asks.map(r => ({
+    r, dir: qdir === 'mix' ? (Math.random() < 0.5 ? 'k2r' : 'r2k') : qdir,
+  })));
   const [i, setI] = useState(0);
   const [sel, setSel] = useState(null);
   const [right, setRight] = useState(0);
   const [combo, setCombo] = useState(0);
+  const wrong = useRef([]);
   const timer = useTimeoutRef();
   const q = queue[i];
 
   const opts = useMemo(() => {
     if (!q) return [];
-    const others = shuffle(rows.filter(x => x.rom !== q.r.rom)).slice(0, 3);
+    const others = shuffle(pool.filter(x => x.rom !== q.r.rom)).slice(0, 3);
     return shuffle([q.r, ...others]);
   }, [i]);
 
@@ -1500,12 +1603,13 @@ function KanaQuiz({ rows, onMark, onExit, label }) {
     const ok = o.rom === q.r.rom;
     setSel(o);
     onMark(q.r.char, ok);
+    if (!ok) wrong.current.push(q.r);
     const n = right + (ok ? 1 : 0);
     setCombo(ok ? combo + 1 : 0);
     timer.current = setTimeout(() => {
-      if (i + 1 >= queue.length) { showKanaDone(onExit, n, queue.length); return; }
+      if (i + 1 >= queue.length) { onExit({ right:n, total:queue.length, wrong:wrong.current }); return; }
       setRight(n); setI(i + 1); setSel(null);
-    }, 800);
+    }, ok ? 650 : 1300);
   };
 
   const k2r = q.dir === 'k2r';
@@ -1547,22 +1651,24 @@ function KanaQuiz({ rows, onMark, onExit, label }) {
   );
 }
 
-/* shared finish handler for both kana modes */
-function showKanaDone(onExit, right, total) { onExit({ right, total }); }
-
 /* ── Kana tab ──────────────────────────────────────────────────────────── */
 function KanaTab({ state, setState, showToast }) {
   const [kind, setKind] = useState('hiragana');   // hiragana | katakana | mixed
+  const [range, setRange] = useState('basic');
   const [mode, setMode] = useState('chart');      // chart | flash | quiz
+  const [qdir, setQdir] = useState('mix');
+  const [qcount, setQcount] = useState(10);
+  const [run, setRun] = useState(null);           // a quiz in progress
   const [result, setResult] = useState(null);
   const [runId, setRunId] = useState(0);
 
-  const hira = HIRAGANA.filter(h => h.char);
-  const kata = KATAKANA.filter(h => h.char);
-  const rows = kind === 'hiragana' ? hira : kind === 'katakana' ? kata : [...hira, ...kata];
-  const label = kind === 'hiragana' ? '히라가나' : kind === 'katakana' ? '가타카나' : '히라가나 + 가타카나';
+  const scripts = kind === 'hiragana' ? ['hira'] : kind === 'katakana' ? ['kata'] : ['hira', 'kata'];
+  const all = scripts.flatMap(sc => kanaRows(sc, range));
+  /* ぢ・づ are chart-only (see DAKU_ROWS) */
+  const rows = all.filter(r => !r.rare);
+  const label = (kind === 'hiragana' ? '히라가나' : kind === 'katakana' ? '가타카나' : '히라가나 + 가타카나')
+    + ' · ' + KANA_RANGES.find(r => r.id === range).label;
 
-  const learnedOf = (key) => new Set(state[key] || []);
   const allLearned = new Set([...(state.hiragana || []), ...(state.katakana || [])]);
   const done = rows.filter(r => allLearned.has(r.char)).length;
   const pct = rows.length ? Math.round(done / rows.length * 100) : 0;
@@ -1584,20 +1690,25 @@ function KanaTab({ state, setState, showToast }) {
     setState({ ...state, [key]: [...s] });
   };
 
-  const start = (m) => { setMode(m); setResult(null); setRunId(r => r + 1); };
+  const goMode = (m) => { setMode(m); setRun(null); setResult(null); setRunId(r => r + 1); };
+  const begin = (asks) => { setResult(null); setRun({ asks, id: Date.now() }); };
+  const startQuiz = () => {
+    const a = shuffle(rows);
+    begin(qcount ? a.slice(0, qcount) : a);
+  };
 
-  const chart = (rowsData, title) => (
+  const chart = (rowsData, title, cols) => (
     <div className="card" key={title}>
       <div className="tip-text" style={{marginBottom:14}}>
         {title} — 글자를 탭하면 완료로 표시됩니다.
       </div>
-      <div className="hira-grid">
+      <div className={`hira-grid${cols === 3 ? ' c3' : ''}`}>
         {rowsData.map((h, i) => (
           h.char ? (
             <div key={i} className={`hira-cell${allLearned.has(h.char) ? ' learned' : ''}`}
               onClick={() => toggle(h.char)}>
-              <span className="hira-char">{h.char}</span>
-              <span className="hira-rom">{h.rom}</span>
+              <span className="hira-char" style={h.char.length > 1 ? {fontSize:19} : null}>{h.char}</span>
+              <span className="hira-rom">{h.rom}{h.rare ? '*' : ''}</span>
             </div>
           ) : <div key={i} />
         ))}
@@ -1605,29 +1716,50 @@ function KanaTab({ state, setState, showToast }) {
     </div>
   );
 
+  /* the chart for the chosen range, per script */
+  const charts = () => scripts.flatMap(sc => {
+    const nm = sc === 'hira' ? '히라가나' : '가타카나';
+    const src = sc === 'hira' ? HIRAGANA : KATAKANA;
+    const out = [];
+    if (range === 'basic' || range === 'all') out.push(chart(src, `${nm} 기본`, 5));
+    if (range === 'daku'  || range === 'all') out.push(chart(kanaRows(sc, 'daku'), `${nm} 탁음·반탁음`, 5));
+    if (range === 'yoon'  || range === 'all') out.push(chart(kanaRows(sc, 'yoon'), `${nm} 요음`, 3));
+    if (range === 'confusing') out.push(chart(kanaRows(sc, 'confusing'), `${nm} 헷갈리는 글자`, 5));
+    return out;
+  });
+
+  const quizLive = mode === 'quiz' && run && !result;
+
   return (
     <div className="content">
       <div className="toggle-wrap three">
-        <button className={`toggle-btn${kind === 'hiragana' ? ' active' : ''}`} onClick={() => setKind('hiragana')}>
+        <button className={`toggle-btn${kind === 'hiragana' ? ' active' : ''}`} onClick={() => { setKind('hiragana'); goMode(mode); }}>
           <span style={{fontFamily:'Georgia,serif', marginRight:4}}>あ</span>히라가나
         </button>
-        <button className={`toggle-btn${kind === 'katakana' ? ' active' : ''}`} onClick={() => setKind('katakana')}>
+        <button className={`toggle-btn${kind === 'katakana' ? ' active' : ''}`} onClick={() => { setKind('katakana'); goMode(mode); }}>
           <span style={{fontFamily:'Georgia,serif', marginRight:4}}>ア</span>가타카나
         </button>
-        <button className={`toggle-btn${kind === 'mixed' ? ' active' : ''}`} onClick={() => setKind('mixed')}>
+        <button className={`toggle-btn${kind === 'mixed' ? ' active' : ''}`} onClick={() => { setKind('mixed'); goMode(mode); }}>
           🔀 섞기
         </button>
+      </div>
+
+      <div className="tabs wrap" style={{marginBottom:12}}>
+        {KANA_RANGES.map(r => (
+          <button key={r.id} className={`tab${range === r.id ? ' active' : ''}`}
+            onClick={() => { setRange(r.id); goMode(mode); }}>{r.label}</button>
+        ))}
       </div>
 
       <div className="toggle-wrap three">
         {KANA_MODES.map(m => (
           <button key={m.id} className={`toggle-btn${mode === m.id ? ' active' : ''}`}
-            onClick={() => start(m.id)}>{m.label}</button>
+            onClick={() => goMode(m.id)}>{m.label}</button>
         ))}
       </div>
 
       {result ? (
-        <div className="card" style={{textAlign:'center', padding:30}}>
+        <div className="card" style={{textAlign:'center', padding:28}}>
           <div className="empty-ja" style={{color:'var(--rose)'}}>
             {result.right === result.total ? '満' : '復'}
           </div>
@@ -1637,19 +1769,86 @@ function KanaTab({ state, setState, showToast }) {
           <div style={{fontSize:14, color:'var(--ink-2)', marginTop:8}}>
             {result.total}개 중 {result.right}개 정답
           </div>
-          <div style={{display:'flex', gap:8, marginTop:24}}>
+
+          {result.wrong && result.wrong.length > 0 && (
+            <div style={{marginTop:18, textAlign:'left'}}>
+              <div className="tip-label">헷갈린 글자 {result.wrong.length}개</div>
+              <div className="pill-row" style={{marginTop:8, marginBottom:0}}>
+                {result.wrong.map((w, k) => (
+                  <span key={k} className="stat-pill" style={{fontSize:13}}>
+                    <span style={{fontFamily:'Georgia,serif', fontSize:16}}>{w.char}</span> {w.rom}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{display:'flex', gap:8, marginTop:22}}>
             <button className="btn btn-ghost" style={{flex:1, padding:14}}
-              onClick={() => { setResult(null); setMode('chart'); }}>표로</button>
-            <button className="btn btn-ghost-rose" style={{flex:1, padding:14}}
-              onClick={() => { setResult(null); setRunId(r => r + 1); }}>한 번 더</button>
+              onClick={() => { setResult(null); setRun(null); if (mode === 'flash') setMode('chart'); }}>
+              {mode === 'quiz' ? '설정으로' : '표로'}
+            </button>
+            {result.wrong && result.wrong.length > 0 && mode === 'quiz' && (
+              <button className="btn btn-ghost-rose" style={{flex:1.4, padding:14}}
+                onClick={() => begin(shuffle(result.wrong))}>
+                틀린 {result.wrong.length}개만 다시
+              </button>
+            )}
+            {mode === 'flash' && (
+              <button className="btn btn-ghost-rose" style={{flex:1, padding:14}}
+                onClick={() => { setResult(null); setRunId(r => r + 1); }}>한 번 더</button>
+            )}
           </div>
+          {mode === 'quiz' && (
+            <button className="btn btn-primary" style={{marginTop:8}} onClick={startQuiz}>새 문제로 다시</button>
+          )}
         </div>
       ) : mode === 'flash' ? (
         <KanaFlash key={runId} rows={rows} learned={allLearned} label={label}
           onMark={mark} onExit={setResult} />
-      ) : mode === 'quiz' ? (
-        <KanaQuiz key={runId} rows={rows} label={label}
+      ) : quizLive ? (
+        <KanaQuiz key={run.id} pool={rows} asks={run.asks} qdir={qdir} label={label}
           onMark={mark} onExit={setResult} />
+      ) : mode === 'quiz' ? (
+        <>
+          <div className="card">
+            <div className="section-title" style={{marginBottom:4}}>{label}</div>
+            <div className="tip-text" style={{marginBottom:14}}>
+              {rows.length}글자 중에서 출제해요. 범위는 위에서 바꿔요.
+            </div>
+
+            <div className="field-label">출제 방식</div>
+            <div className="tabs" style={{marginBottom:14}}>
+              {QDIRS.map(d => (
+                <button key={d.id} className={`tab${qdir === d.id ? ' active' : ''}`}
+                  onClick={() => setQdir(d.id)}>{d.label}</button>
+              ))}
+            </div>
+
+            <div className="field-label">문제 수</div>
+            <div className="tabs" style={{marginBottom:16}}>
+              {QCOUNTS.map(c => {
+                const n = c ? Math.min(c, rows.length) : rows.length;
+                return (
+                  <button key={c} className={`tab${qcount === c ? ' active' : ''}`}
+                    onClick={() => setQcount(c)}>{c ? `${n}문제` : `전부 ${n}`}</button>
+                );
+              })}
+            </div>
+
+            <button className="btn btn-primary" disabled={rows.length < 4} onClick={startQuiz}>
+              퀴즈 시작
+            </button>
+          </div>
+
+          <div className="tip-card">
+            <div className="tip-label">참고</div>
+            <div className="tip-text">
+              틀린 글자는 완료 표시가 풀리고, 끝나면 헷갈린 글자만 골라 다시 풀 수 있어요.
+              {range === 'daku' || range === 'all' ? ' ぢ·づ는 じ·ず와 소리가 같아서 퀴즈에서는 빠져요.' : ''}
+            </div>
+          </div>
+        </>
       ) : (
         <>
           <div className="card" style={{marginBottom:12}}>
@@ -1663,18 +1862,17 @@ function KanaTab({ state, setState, showToast }) {
             </div>
           </div>
 
-          {kind === 'mixed'
-            ? [chart(HIRAGANA, '히라가나'), chart(KATAKANA, '가타카나')]
-            : chart(kind === 'hiragana' ? HIRAGANA : KATAKANA, label)}
+          {charts()}
 
           <div className="tip-card" style={{marginTop:12}}>
             <div className="tip-label">학습 팁</div>
             <div className="tip-text">
-              {kind === 'hiragana'
-                ? '히라가나는 일본어의 기본 문자예요. 하루 한 행(5글자)씩 외워보세요.'
-                : kind === 'katakana'
-                ? '가타카나는 외래어·이름 표기에 쓰여요. コーヒー(커피)처럼 익숙한 단어부터 시작해보세요.'
-                : 'シ와ツ, ソ와ン처럼 헷갈리는 글자는 섞어서 퀴즈를 풀어야 확실히 구분돼요.'}
+              {range === 'daku' ? '탁음은 점 두 개(゛), 반탁음은 동그라미(゜)가 붙어요. か → が, は → ば → ぱ 처럼 짝으로 외워요. *는 じ·ず와 같은 소리라 퀴즈에서 빠져요.'
+               : range === 'yoon' ? '요음은 い단 글자에 작은 や·ゆ·よ를 붙여 한 소리로 읽어요. き + ゃ = きゃ(kya).'
+               : range === 'confusing' ? '모양이 비슷해 자주 헷갈리는 글자만 모았어요. シ와 ツ, ソ와 ン은 획 방향이 달라요.'
+               : kind === 'hiragana' ? '히라가나는 일본어의 기본 문자예요. 하루 한 행(5글자)씩 외워보세요.'
+               : kind === 'katakana' ? '가타카나는 외래어·이름 표기에 쓰여요. コーヒー(커피)처럼 익숙한 단어부터 시작해보세요.'
+               : 'シ와ツ, ソ와ン처럼 헷갈리는 글자는 섞어서 퀴즈를 풀어야 확실히 구분돼요.'}
             </div>
           </div>
         </>
@@ -3695,9 +3893,16 @@ function SettingsCard({ state, setState, showToast }) {
 }
 
 /* ── Today tab ─────────────────────────────────────────────────────────── */
+/* notes that came from no built-in lesson: pasted, typed or found by search */
+const STUDY_IDS = new Set(STUDY_DECKS.map(d => d.id));
+function isMine(n) { return !STUDY_IDS.has(n.deck); }
+
 function TodayTab({ state, setState, showToast, studying, setStudying }) {
-  const notes = (state.notes || []).filter(n => state.coreOnly === false || n.lv !== 'lit');
   const today = todayStr();
+  const pins = state.pins && state.pins.date === today ? state.pins.ids : [];
+  /* a card the user looked up is shown even if the practical filter hides it */
+  const notes = (state.notes || []).filter(n =>
+    state.coreOnly === false || n.lv !== 'lit' || pins.includes(n.id));
   const daily = state.daily && state.daily.date === today
     ? state.daily : { date: today, newDone: 0, reviewDone: 0 };
   const perDay = state.newPerDay === 0 ? 0 : (state.newPerDay || DEFAULT_NEW_PER_DAY);
@@ -3706,10 +3911,11 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
 
   /* an empty / missing list means every lesson */
   const picked = state.lessonScope;
+  const inPicked = (n) => picked.includes(n.deck) || (picked.includes('mine') && isMine(n));
   const scoped = picked && picked.length
-    ? notes.filter(n => picked.includes(n.deck)) : notes;
+    ? notes.filter(n => inPicked(n) || pins.includes(n.id)) : notes;
   const newLeft = perDay ? perDay - daily.newDone : Infinity;
-  const { review, fresh, freshTotal, total } = dueSplit(scoped, newLeft, dirs);
+  const { review, fresh, freshTotal, total } = dueSplit(scoped, newLeft, dirs, pins);
   const waiting = review.length + fresh.length;
 
   const grade = (id, g, dir) => {
@@ -3717,7 +3923,8 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
     const wasNew = !sget(target, dir, 'reps');
     const d = state.daily && state.daily.date === today
       ? { ...state.daily } : { date: today, newDone: 0, reviewDone: 0 };
-    if (wasNew) d.newDone += 1; else d.reviewDone += 1;
+    /* looked-up cards do not use up the day's new-card allowance */
+    if (wasNew && !pins.includes(id)) d.newDone += 1; else d.reviewDone += 1;
 
     let streak = state.streak || 0;
     const last = state.lastStudy;
@@ -3772,7 +3979,12 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
   const maxFc = Math.max(1, ...fc);
   const longTerm = entriesOf(scoped, dirs).filter(e => (sget(e.n, e.dir, 'ivl') || 0) >= 21).length;
 
-  const lessons = STUDY_DECKS.filter(d => notes.some(n => n.deck === d.id));
+  const mineCount = notes.filter(isMine).length;
+  const lessons = [
+    ...STUDY_DECKS.filter(d => notes.some(n => n.deck === d.id)),
+    ...(mineCount ? [{ id:'mine', name:'내가 추가한 카드', date:null, sub:'붙여넣기 · 검색으로 추가' }] : []),
+  ];
+  const countOf = (d) => d.id === 'mine' ? mineCount : notes.filter(n => n.deck === d.id).length;
   const toggleLesson = (id) => {
     const cur = picked && picked.length ? picked : lessons.map(d => d.id);
     const next = cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id];
@@ -3853,13 +4065,15 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
           </div>
           {lessons.map(d => {
             const on = !picked || !picked.length || picked.includes(d.id);
-            const c = notes.filter(n => n.deck === d.id).length;
+            const c = countOf(d);
             return (
               <button key={d.id} className={`pick-row${on ? ' on' : ''}`} onClick={() => toggleLesson(d.id)}>
                 <span className={`pick-box${on ? ' on' : ''}`}>{on ? '✓' : ''}</span>
                 <span style={{minWidth:0, flex:1}}>
                   <span className="pick-name">{d.name}</span>
-                  <span className="pick-sub">{d.date ? fmtLessonDate(d.date) : '기초'} · {d.sub}</span>
+                  <span className="pick-sub">
+                    {d.id === 'mine' ? d.sub : `${d.date ? fmtLessonDate(d.date) : '기초'} · ${d.sub}`}
+                  </span>
                 </span>
                 <span className="dir-count">{c}장</span>
               </button>
@@ -3926,6 +4140,335 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
   );
 }
 
+/* ── Dictionary lookup (kanjiapi.dev) ──────────────────────────────────── */
+/* Kanji by character, and every word containing a given kanji. It has no
+   search by kana, Korean or English, so those only match the user's notes. */
+const DICT_BASE = 'https://kanjiapi.dev/v1';
+const KANJI_G = /[一-龯㐀-䶿]/g;
+const dictCache = { kanji:{}, words:{} };
+
+async function dictJson(path, signal) {
+  const r = await fetch(DICT_BASE + path, { signal });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function fetchKanji(ch, signal) {
+  if (ch in dictCache.kanji) return dictCache.kanji[ch];
+  const d = await dictJson('/kanji/' + encodeURIComponent(ch), signal);
+  dictCache.kanji[ch] = d;
+  return d;
+}
+async function fetchWords(ch, signal) {
+  if (ch in dictCache.words) return dictCache.words[ch];
+  const d = await dictJson('/words/' + encodeURIComponent(ch), signal);
+  dictCache.words[ch] = d;
+  return d;
+}
+
+/* API entry -> the fields a note needs. Meanings arrive in English; the
+   detail screen lets the user rewrite them in Korean. */
+function kanjiItem(d) {
+  const on  = (d.on_readings || []).slice(0, 3);
+  const kun = [...new Set((d.kun_readings || []).map(k => k.replace(/^-/, '').replace('.', '-')))].slice(0, 3);
+  return {
+    key: 'k:' + d.kanji, type: 'kanji', front: d.kanji,
+    reading: [on.join('・'), kun.join('・')].filter(Boolean).join(' / '),
+    back: (d.meanings || []).slice(0, 3).join(', '),
+    extra: [d.jlpt ? `JLPT N${d.jlpt}` : '', d.stroke_count ? `${d.stroke_count}획` : ''].filter(Boolean).join(' · '),
+  };
+}
+function wordItem(entry, v) {
+  return {
+    key: 'w:' + v.written + ':' + v.pronounced, type: 'word', front: v.written,
+    reading: v.pronounced,
+    back: (entry.meanings || []).slice(0, 3).map(m => (m.glosses || [])[0]).filter(Boolean).join(', '),
+    extra: '',
+  };
+}
+
+async function lookupDict(q, signal) {
+  const kanjis = [...new Set(q.match(KANJI_G) || [])].slice(0, 6);
+  if (!kanjis.length) return { items: [], hasKanji: false };
+  const kanji = (await Promise.all(kanjis.map(k => fetchKanji(k, signal)))).filter(Boolean).map(kanjiItem);
+
+  const data = await fetchWords(kanjis[0], signal);
+  const exact = [], partial = [], seen = new Set();
+  (data || []).forEach(e => e.variants.forEach(v => {
+    const k = v.written + ':' + v.pronounced;
+    if (seen.has(k)) return;
+    const pri = (v.priorities || []).length;
+    if (v.written === q || v.pronounced === q) { seen.add(k); exact.push({ e, v, pri }); }
+    else if (q.length >= 2 ? v.written.startsWith(q) : pri > 0) { seen.add(k); partial.push({ e, v, pri }); }
+  }));
+  const byPri = (a, b) => b.pri - a.pri;
+  const exactItems = exact.sort(byPri).map(x => wordItem(x.e, x.v));
+  const moreItems = partial.sort(byPri).slice(0, 8).map(x => wordItem(x.e, x.v));
+  /* the word that was typed comes first; the single kanji inside it after */
+  const ordered = exactItems.length
+    ? [...exactItems, ...kanji, ...moreItems]
+    : [...kanji, ...moreItems];
+  return { items: ordered, hasKanji: true };
+}
+
+/* ── Local search over the user's own cards ────────────────────────────── */
+function kataToHira(s) {
+  return (s || '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+}
+function normSearch(s) { return kataToHira((s || '').toLowerCase()).replace(/\s+/g, ''); }
+function searchNotes(notes, q) {
+  const nq = normSearch(q);
+  if (!nq) return [];
+  const hits = [];
+  notes.forEach(n => {
+    const f = normSearch(n.front), r = normSearch(n.reading), b = normSearch(n.back), x = normSearch(n.extra);
+    let sc = 0;
+    if (f === nq) sc = 100; else if (f.startsWith(nq)) sc = 80; else if (f.includes(nq)) sc = 60;
+    else if (r === nq) sc = 70; else if (r.startsWith(nq)) sc = 55; else if (r.includes(nq)) sc = 45;
+    else if (b === nq) sc = 50; else if (b.includes(nq)) sc = 35;
+    else if (x.includes(nq)) sc = 15;
+    if (sc) hits.push({ n, sc });
+  });
+  return hits.sort((a, b) => b.sc - a.sc).slice(0, 40).map(h => h.n);
+}
+
+/* ── Search tab ────────────────────────────────────────────────────────── */
+function SearchTab({ state, setState, showToast, goStudy }) {
+  const [q, setQ] = useState('');
+  const [dict, setDict] = useState(null);           /* {kanji, words, hasKanji} */
+  const [status, setStatus] = useState('idle');     /* idle | loading | error */
+  const [detail, setDetail] = useState(null);       /* an item being viewed */
+  const [meaning, setMeaning] = useState('');
+
+  const notes = state.notes || [];
+  const today = todayStr();
+  const pins = state.pins && state.pins.date === today ? state.pins.ids : [];
+  const query = q.trim();
+
+  const local = useMemo(() => searchNotes(notes, query), [notes, query]);
+
+  /* the dictionary is asked after a short pause, and a newer search cancels
+     an older one still in flight */
+  useEffect(() => {
+    setDict(null);
+    if (!query || !hasKanji(query)) { setStatus('idle'); return; }
+    setStatus('loading');
+    const ctl = new AbortController();
+    const t = setTimeout(() => {
+      lookupDict(query, ctl.signal)
+        .then(r => { setDict(r); setStatus('idle'); })
+        .catch(err => { if (err.name !== 'AbortError') setStatus('error'); });
+    }, 450);
+    return () => { clearTimeout(t); ctl.abort(); };
+  }, [query]);
+
+  const noteOf = (it) => notes.find(n => n.front === it.front);
+
+  /* opening a result puts it on today's list, creating the card if it is new */
+  const addToToday = (it) => {
+    let list = notes;
+    let note = noteOf(it);
+    if (!note) {
+      note = makeNote(it.type, it.front, it.reading, it.back, it.extra);
+      note.deck = 'search';
+      note.lv = 'core';
+      list = [...notes, note];
+    } else {
+      /* a card already being studied is brought due again right now */
+      const now = Date.now();
+      const patch = {};
+      DIR_KEYS.forEach(d => { if (note[DIRS[d].pre + 'reps'] > 0) patch[DIRS[d].pre + 'due'] = now; });
+      note = { ...note, ...patch };
+      list = notes.map(n => n.id === note.id ? note : n);
+    }
+    const ids = pins.includes(note.id) ? pins : [...pins, note.id];
+    setState({ ...state, notes: list, pins: { date: today, ids } });
+    return note;
+  };
+
+  const open = (it) => {
+    const n = addToToday(it);
+    setMeaning(n.back);
+    setDetail({ ...it, id: n.id });
+  };
+
+  const saveMeaning = () => {
+    const v = meaning.trim();
+    if (!v || !detail) return;
+    setState({ ...state, notes: notes.map(n => n.id === detail.id ? { ...n, back: v } : n) });
+    showToast('뜻을 바꿨어요 ✓');
+  };
+
+  const remove = () => {
+    if (!detail) return;
+    const n = notes.find(x => x.id === detail.id);
+    const never = n && n.deck === 'search' && !DIR_KEYS.some(d => n[DIRS[d].pre + 'reps'] > 0);
+    setState({
+      ...state,
+      notes: never ? notes.filter(x => x.id !== detail.id) : notes,
+      pins: { date: today, ids: pins.filter(id => id !== detail.id) },
+    });
+    setDetail(null);
+    showToast(never ? '카드를 지웠어요' : '오늘 복습에서 뺐어요');
+  };
+
+  const studyNow = (onlyId) => {
+    const ids = onlyId ? [onlyId] : pins;
+    const dirs = activeDirs(state);
+    const now = Date.now();
+    const queue = shuffle(entriesOf(notes.filter(n => ids.includes(n.id)), dirs).filter(e =>
+      !sget(e.n, e.dir, 'reps') || (sget(e.n, e.dir, 'due') || 0) <= now));
+    if (!queue.length) { showToast('지금 볼 카드가 없어요'); return; }
+    goStudy(queue);
+  };
+
+  /* ── detail screen ── */
+  if (detail) {
+    const n = notes.find(x => x.id === detail.id);
+    const pinned = pins.includes(detail.id);
+    const probe = { type: detail.type, front: detail.front };
+    return (
+      <div className="content">
+        <div className="rv-bar">
+          <button className="btn btn-ghost btn-sm" onClick={() => setDetail(null)}>← 검색</button>
+          <span className={`dir-chip ${detail.type === 'kanji' ? 'dir-read' : 'dir-mean'}`}>
+            {NOTE_TYPES[detail.type].label}
+          </span>
+        </div>
+
+        <div className="quiz-q-card" style={{padding:'28px 18px'}}>
+          <div className="rv-q" style={{fontSize: detail.front.length > 4 ? 34 : 64}}>{detail.front}</div>
+          {detail.reading && <div className="rv-sub" style={{fontSize:15}}>{detail.reading}</div>}
+          <SpeakBtn note={probe} />
+          {detail.extra && <div className="rv-sub" style={{marginTop:10}}>{detail.extra}</div>}
+        </div>
+
+        <div className="card">
+          <label className="field-label">뜻 {n && n.deck === 'search' && '(한국어로 바꿔 적어도 돼요)'}</label>
+          <input className="field-input" style={{fontSize:15}} value={meaning}
+            onChange={e => setMeaning(e.target.value)} />
+          <button className="btn btn-ghost-rose" style={{width:'100%', marginTop:10, padding:11}}
+            disabled={!meaning.trim() || meaning.trim() === (n && n.back)} onClick={saveMeaning}>
+            뜻 저장
+          </button>
+        </div>
+
+        <div className={`ans-box ${pinned ? 'ok' : 'ng'}`} style={{marginBottom:10}}>
+          <div className="ans-label">{pinned ? '오늘 복습에 담김' : '오늘 복습에서 빠짐'}</div>
+          <div style={{fontSize:12, marginTop:6, opacity:0.85, lineHeight:1.5}}>
+            {pinned ? '오늘 탭의 복습 목록에 들어 있어요.' : '다시 담으려면 검색 결과를 열어 주세요.'}
+          </div>
+        </div>
+
+        {pinned ? (
+          <>
+            <button className="btn btn-primary" onClick={() => studyNow(detail.id)}>이 카드 지금 복습하기</button>
+            <button className="btn btn-ghost" style={{width:'100%', marginTop:8, padding:12}} onClick={remove}>
+              오늘 복습에서 빼기
+            </button>
+          </>
+        ) : (
+          <button className="btn btn-primary" onClick={() => { addToToday(detail); }}>다시 담기</button>
+        )}
+      </div>
+    );
+  }
+
+  /* ── list screen ── */
+  const inNotes = (it) => notes.some(n => n.front === it.front);
+  const row = (it, key, have) => (
+    <button key={key} className="search-row" onClick={() => open(it)}>
+      <span style={{minWidth:0, flex:1}}>
+        <span className="search-front">{it.front}</span>
+        {it.reading && <span className="search-read">{it.reading}</span>}
+        <span className="search-back">{it.back}</span>
+      </span>
+      <span className="search-badges">
+        <span className={`dir-chip ${it.type === 'kanji' ? 'dir-read' : it.type === 'word' ? 'dir-mean' : 'dir-recall'}`}
+          style={{marginRight:0}}>{NOTE_TYPES[it.type].label}</span>
+        {pins.includes((notes.find(n => n.front === it.front) || {}).id) && <span className="pin-dot">오늘 ✓</span>}
+        {have && <span className="have-dot">노트</span>}
+      </span>
+    </button>
+  );
+
+  const dictItems = dict ? dict.items : [];
+  const pinnedNotes = notes.filter(n => pins.includes(n.id));
+
+  return (
+    <div className="content">
+      <div className="search-box">
+        <span className="search-icon">🔍</span>
+        <input className="search-input" value={q} placeholder="일본어 · 한자 · 뜻으로 검색"
+          autoCapitalize="none" autoCorrect="off" spellCheck={false}
+          onChange={e => setQ(e.target.value)} />
+        {q && <button className="search-clear" onClick={() => setQ('')} aria-label="지우기">✕</button>}
+      </div>
+
+      {!query && (
+        <>
+          <div className="tip-card" style={{marginBottom:12}}>
+            <div className="tip-label">이렇게 검색해요</div>
+            <div className="tip-text">
+              한자나 단어를 넣으면 사전에서 읽는 법·뜻을 찾아와요.<br/>
+              결과를 열면 <strong>오늘 복습에 자동으로 담기고</strong>, 새 단어는 내 카드로도 저장돼요.<br/>
+              가나(ひらがな)나 한국어는 <strong>내 노트</strong> 안에서만 찾아요.
+            </div>
+          </div>
+          {pinnedNotes.length > 0 && (
+            <div className="card">
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:8}}>
+                <span className="section-title" style={{marginBottom:0}}>오늘 담은 카드 {pinnedNotes.length}장</span>
+              </div>
+              <div className="pill-row" style={{marginBottom:12}}>
+                {pinnedNotes.slice(0, 20).map(n => (
+                  <button key={n.id} className="stat-pill" onClick={() => open({
+                    key: n.id, type: n.type, front: n.front, reading: n.reading, back: n.back, extra: n.extra })}>
+                    {n.front}
+                  </button>
+                ))}
+              </div>
+              <button className="btn btn-primary" onClick={() => studyNow()}>담은 카드 지금 복습하기</button>
+            </div>
+          )}
+        </>
+      )}
+
+      {query && (
+        <>
+          <div className="section-title">내 노트 {local.length}</div>
+          {local.length ? (
+            <div className="card" style={{padding:'4px 14px'}}>
+              {local.map(n => row({ key:n.id, type:n.type, front:n.front, reading:n.reading, back:n.back, extra:n.extra }, n.id, true))}
+            </div>
+          ) : <div className="tip-text" style={{marginBottom:14}}>내 노트에는 없어요.</div>}
+
+          <div className="section-title" style={{marginTop:18}}>사전</div>
+          {status === 'loading' && <div className="tip-text">찾는 중이에요…</div>}
+          {status === 'error' && (
+            <div className="tip-card"><div className="tip-text">
+              사전에 연결하지 못했어요. 인터넷 연결을 확인해 주세요. 내 노트 검색은 그대로 쓸 수 있어요.
+            </div></div>
+          )}
+          {status === 'idle' && dict && dict.hasKanji && dictItems.length === 0 && (
+            <div className="tip-text">사전에서 찾지 못했어요.</div>
+          )}
+          {status === 'idle' && !dict && (
+            <div className="tip-text">
+              사전은 <strong>한자가 들어간 말</strong>만 찾을 수 있어요. 가나만 넣으면 내 노트에서만 찾습니다.
+            </div>
+          )}
+          {dictItems.length > 0 && (
+            <div className="card" style={{padding:'4px 14px'}}>
+              {dictItems.map(it => row(it, it.key, inNotes(it)))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ── Main App ──────────────────────────────────────────────────────────── */
 function App() {
   const [appState, setAppState] = useState(null);
@@ -3965,13 +4508,15 @@ function App() {
   const tabs = [
     { id:'today',  icon:'🔥', label:'오늘' },
     { id:'notes',  icon:'📚', label:'수업' },
+    { id:'search', icon:'🔍', label:'검색' },
     { id:'kana',   icon:'あ',  label:'문자' },
   ];
 
   const HEADER_TITLES = {
     today: { main:'오늘', accent:'복습' },
-    notes: { main:'수업', accent:'노트' },
-    kana:  { main:'가나', accent:'あ ア' },
+    notes:  { main:'수업', accent:'노트' },
+    search: { main:'단어', accent:'검색' },
+    kana:   { main:'가나', accent:'あ ア' },
   };
   const ht = HEADER_TITLES[tab];
 
@@ -4002,6 +4547,8 @@ function App() {
       {tab==='today'  && <TodayTab state={appState} setState={updateState} showToast={showToast}
                             studying={studying} setStudying={setStudying} />}
       {tab==='notes'  && <NotesTab state={appState} setState={updateState} showToast={showToast} />}
+      {tab==='search' && <SearchTab state={appState} setState={updateState} showToast={showToast}
+                            goStudy={(queue) => { setStudying({ id: Date.now(), queue }); setTab('today'); }} />}
       {tab==='kana'   && <KanaTab  state={appState} setState={updateState} showToast={showToast} />}
 
       <nav className="nav">
