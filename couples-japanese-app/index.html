@@ -20,6 +20,8 @@
   <style>
     /* ── Tokens ─────────────────────────────────────────────────────────── */
     :root {
+      --gold:      #e8a317;
+      --flame:     #ee6a2b;
       --bg:        #f5f0eb;
       --surface:   #ffffff;
       --surface-2: #faf7f3;
@@ -628,6 +630,168 @@
     }
     .pin-dot  { background: var(--ok-lt); color: var(--ok); }
     .have-dot { background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--border); }
+
+    /* ── Game layer ─────────────────────────────────────────────────────── */
+    .prog-fill.gold { background: var(--gold); }
+    .hchips { display: flex; gap: 6px; }
+    .hchip {
+      font-size: 12.5px; font-weight: 800; padding: 5px 10px; border-radius: 20px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      font-variant-numeric: tabular-nums; color: var(--ink-3);
+    }
+    .hchip.flame.lit { color: var(--flame); border-color: color-mix(in srgb, var(--flame) 35%, transparent); }
+    .hchip.gold { color: var(--gold); }
+
+    .game-strip { padding: 16px; }
+    .gs-row { display: flex; align-items: center; gap: 14px; }
+    .gs-streak { display: flex; flex-direction: column; align-items: center; min-width: 54px; line-height: 1.1; }
+    .gs-streak b { font-size: 22px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .gs-streak small { font-size: 10px; color: var(--ink-3); margin-top: 1px; }
+    .gs-flame { font-size: 26px; filter: grayscale(1) opacity(0.45); }
+    .gs-flame.lit { filter: none; animation: flame 1.4s ease-in-out infinite; }
+    .gs-level { flex: 1; min-width: 0; }
+    .gs-level small, .sum-card small { display: block; font-size: 10.5px; color: var(--ink-3); margin-top: 5px; font-variant-numeric: tabular-nums; }
+    .gs-lv { font-size: 13px; margin-bottom: 7px; color: var(--ink); }
+    .gs-lv b { font-weight: 800; }
+    .gs-lv span { color: var(--ink-3); font-size: 11.5px; margin-left: 4px; }
+
+    .ring { position: relative; flex-shrink: 0; }
+    .ring svg { display: block; }
+    .ring-bg { fill: none; stroke: var(--border); stroke-width: 7; }
+    .ring-fg { fill: none; stroke: var(--rose); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+    .ring-fg.full { stroke: var(--ok); }
+    .ring-in { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
+    .ring-num { font-size: 15px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .ring-sub { font-size: 9px; color: var(--ink-3); }
+
+    .week { display: flex; justify-content: space-between; margin-top: 14px; }
+    .wk { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+    .wk-dot {
+      width: 28px; height: 28px; border-radius: 50%; font-size: 13px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--surface-2); border: 1.5px solid var(--border); color: var(--ok);
+    }
+    .wk.done .wk-dot { background: var(--ok-lt); border-color: var(--ok); }
+    .wk.goal .wk-dot { background: color-mix(in srgb, var(--flame) 16%, var(--surface)); border-color: var(--flame); }
+    .wk.today .wk-dot { box-shadow: 0 0 0 3px var(--rose-lt); border-color: var(--rose); }
+    .wk-dow { font-size: 10px; color: var(--ink-3); font-weight: 700; }
+    .wk.today .wk-dow { color: var(--rose); }
+
+    .mascot-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+    .mascot { font-size: 34px; line-height: 1; flex-shrink: 0; }
+    .bubble {
+      position: relative; flex: 1; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 10px 13px; font-size: 13px; font-weight: 600; color: var(--ink-2); line-height: 1.4;
+    }
+    .bubble::before {
+      content: ''; position: absolute; left: -6px; top: 50%; width: 10px; height: 10px; margin-top: -5px;
+      background: var(--surface-2); border-left: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      transform: rotate(45deg);
+    }
+
+    .badges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .badge-cell {
+      display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px;
+      padding: 12px 6px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border);
+      opacity: 0.5; filter: grayscale(0.85);
+    }
+    .badge-cell.on { opacity: 1; filter: none; background: color-mix(in srgb, var(--gold) 12%, var(--surface)); border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
+    .badge-ic { font-size: 26px; line-height: 1.1; font-family: Georgia, 'Hiragino Mincho ProN', serif; }
+    .badge-nm { font-size: 11.5px; font-weight: 800; color: var(--ink); }
+    .badge-ds { font-size: 9.5px; color: var(--ink-3); line-height: 1.35; }
+
+    /* lesson screen: tab bar and header get out of the way */
+    body.immersive .nav, body.immersive .header { display: none; }
+    body.immersive .content { padding-top: calc(14px + env(safe-area-inset-top)); padding-bottom: 200px; }
+    .sx-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .sx-x { font-size: 20px; color: var(--ink-3); padding: 4px 6px; line-height: 1; }
+    .sx-bar { flex: 1; height: 14px; background: var(--border); border-radius: 8px; overflow: hidden; }
+    .sx-fill { height: 100%; border-radius: 8px; background: var(--ok); transition: width 0.4s ease; min-width: 0; }
+    .sx-combo { font-size: 13px; font-weight: 800; color: var(--ink-3); min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+    .sx-combo.hot { color: var(--flame); animation: pulse 0.9s ease-in-out infinite; }
+    .sx-meta { font-size: 11.5px; color: var(--ink-3); margin-bottom: 14px; font-weight: 600; }
+    .xp-pop {
+      position: fixed; top: 84px; left: 50%; transform: translateX(-50%); z-index: 130;
+      font-size: 20px; font-weight: 800; color: var(--gold); pointer-events: none;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.12); animation: xp-rise 1.1s ease-out forwards;
+    }
+    .fb-sheet {
+      position: fixed; left: 50%; bottom: 0; width: 100%; max-width: 480px; z-index: 120;
+      transform: translateX(-50%);
+      padding: 18px 20px calc(18px + env(safe-area-inset-bottom));
+      border-radius: 22px 22px 0 0; animation: fb-in 0.22s ease-out forwards;
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.12);
+    }
+    .fb-sheet.ok { background: var(--ok-lt); color: var(--ok); }
+    .fb-sheet.ng { background: var(--err-lt); color: var(--err); }
+    .fb-title { font-size: 19px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; }
+    .fb-xp { font-size: 14px; color: var(--gold); }
+    .fb-ans { font-size: 17px; font-weight: 700; margin-top: 8px; }
+    .fb-ans small { display: block; font-size: 10.5px; letter-spacing: 0.6px; opacity: 0.75; margin-bottom: 2px; }
+    .fb-sub { font-size: 12.5px; margin-top: 8px; opacity: 0.85; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .fb-sheet .speak-btn { margin-top: 0; width: 28px; height: 28px; font-size: 13px; background: rgba(255,255,255,0.5); border-color: transparent; }
+    .fb-btn {
+      width: 100%; margin-top: 14px; padding: 15px; border-radius: 14px;
+      font-size: 15px; font-weight: 800; color: #fff; letter-spacing: 0.3px;
+    }
+    .fb-sheet.ok .fb-btn { background: var(--ok); box-shadow: 0 4px 0 color-mix(in srgb, var(--ok) 65%, #000); }
+    .fb-sheet.ng .fb-btn { background: var(--err); box-shadow: 0 4px 0 color-mix(in srgb, var(--err) 65%, #000); }
+    .fb-btn:active { transform: translateY(2px); box-shadow: none !important; }
+
+    .summary { position: relative; text-align: center; padding-top: 6px; }
+    .sum-mascot { font-size: 70px; line-height: 1; animation: bounce 1.1s ease-in-out infinite; }
+    .sum-title { font-size: 26px; font-weight: 800; color: var(--gold); margin-top: 6px; }
+    .sum-line { font-size: 13.5px; color: var(--ink-2); margin: 4px 0 18px; }
+    .sum-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .sum-tile { border-radius: 14px; padding: 11px 6px; border: 1.5px solid; background: var(--surface); }
+    .sum-tile span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; margin-bottom: 3px; }
+    .sum-tile b { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .sum-tile.gold  { border-color: var(--gold); color: var(--gold); }
+    .sum-tile.green { border-color: var(--ok);   color: var(--ok); }
+    .sum-tile.blue  { border-color: var(--plum); color: var(--plum); }
+    .sum-banner {
+      background: color-mix(in srgb, var(--gold) 16%, var(--surface)); border: 1.5px solid var(--gold);
+      color: var(--ink); border-radius: 14px; padding: 12px; font-size: 14px; font-weight: 700;
+      margin-bottom: 10px; animation: bounce 1.4s ease-in-out 2;
+    }
+    .sum-card {
+      text-align: left; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; margin-bottom: 10px;
+    }
+    .sum-goal { display: flex; align-items: center; gap: 14px; }
+    .sum-goal-t { font-size: 14px; font-weight: 800; color: var(--ink); }
+    .sum-goal-s { font-size: 11.5px; color: var(--ink-3); margin-top: 3px; }
+    .sum-chip {
+      display: inline-block; background: color-mix(in srgb, var(--flame) 14%, var(--surface));
+      color: var(--flame); font-size: 12.5px; font-weight: 800; padding: 7px 14px; border-radius: 20px; margin-bottom: 10px;
+    }
+    .sum-ach {
+      display: flex; align-items: center; gap: 12px; text-align: left; margin-bottom: 8px;
+      background: color-mix(in srgb, var(--gold) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+      border-radius: 14px; padding: 11px 14px;
+    }
+    .sum-ach > span { font-size: 28px; font-family: Georgia, serif; }
+    .sum-ach b { display: block; font-size: 13.5px; color: var(--ink); }
+    .sum-ach small { font-size: 11px; color: var(--ink-3); }
+    .sum-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .sum-actions .btn-primary { box-shadow: 0 4px 0 color-mix(in srgb, var(--rose) 65%, #000); }
+
+    .confetti { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 300; }
+    .confetti i { position: absolute; top: -18px; border-radius: 2px; animation: confetti-fall linear forwards; }
+    @keyframes confetti-fall {
+      0%   { transform: translate(0, 0) rotate(0); opacity: 1; }
+      85%  { opacity: 1; }
+      100% { transform: translate(var(--dx), 108vh) rotate(var(--rot)); opacity: 0; }
+    }
+    @keyframes flame  { 0%,100% { transform: scale(1) rotate(-3deg); } 50% { transform: scale(1.14) rotate(3deg); } }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes xp-rise { 0% { opacity: 0; transform: translate(-50%, 8px); } 18% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px); } }
+    @keyframes fb-in  { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+    @media (prefers-reduced-motion: reduce) {
+      .confetti { display: none; }
+      .gs-flame.lit, .sum-mascot, .sum-banner, .sx-combo.hot { animation: none; }
+      .fb-sheet { animation: none; transform: translate(-50%, 0); }
+    }
 
     /* ── Direction chips & rows ─────────────────────────────────────────── */
     .dir-chip {
@@ -1602,6 +1766,7 @@ function KanaQuiz({ pool, asks, qdir, onMark, onExit, label }) {
     if (sel) return;
     const ok = o.rom === q.r.rom;
     setSel(o);
+    sfx(ok ? 'ok' : 'ng');
     onMark(q.r.char, ok);
     if (!ok) wrong.current.push(q.r);
     const n = right + (ok ? 1 : 0);
@@ -1687,7 +1852,12 @@ function KanaTab({ state, setState, showToast }) {
     const key = kanaKeyOf(char);
     const s = new Set(state[key] || []);
     if (ok) s.add(char); else s.delete(char);
-    setState({ ...state, [key]: [...s] });
+    const next = { ...state, [key]: [...s] };
+    if (ok) {
+      const r = applyGame(touchStudyDay(next), { xp: 3 });
+      setState(r.next);
+      announce(r.events, showToast);
+    } else setState(next);
   };
 
   const goMode = (m) => { setMode(m); setRun(null); setResult(null); setRunId(r => r + 1); };
@@ -3542,7 +3712,14 @@ function ReviewCouple({ pool, state, grade, onBack, dir = 'mean' }) {
 }
 
 /* ── Result screen ─────────────────────────────────────────────────────── */
-function ReviewResult({ result, onRetry, onHome }) {
+function ReviewResult({ result, state, onRetry, onHome }) {
+  if (result.session) {
+    return (
+      <div className="content">
+        <SessionSummary stats={result} start={result.start} state={state} onClose={onHome} onRetry={onRetry} />
+      </div>
+    );
+  }
   const pct = result.total ? Math.round(result.right / result.total * 100) : 0;
   const msg = pct === 100 ? '완벽해요! 다음 단계로 넘어가도 좋아요'
             : pct >= 80  ? '좋아요! 거의 다 외웠어요'
@@ -3771,7 +3948,7 @@ function NotesTab({ state, setState, showToast }) {
   };
 
   /* every drill here feeds the same schedule the 오늘 tab reads */
-  const gradeSrs = (id, g, d) => {
+  const gradeSrs = (id, g, d, extra) => {
     const target = notes.find(x => x.id === id);
     if (!target) return;
     const day = todayStr();
@@ -3782,11 +3959,14 @@ function NotesTab({ state, setState, showToast }) {
     let streak = state.streak || 0;
     const last = state.lastStudy;
     if (last !== day) streak = last && daysBetween(last, day) === 1 ? streak + 1 : 1;
-    setState({
+    const moved = {
       ...state,
       notes: notes.map(n => n.id === id ? schedule(n, g, d) : n),
       daily: rec, streak, lastStudy: day,
-    });
+    };
+    const r = applyGame(moved, extra || { xp: xpFor(g, 0) });
+    setState(r.next);
+    announce(r.events, showToast);
   };
   /* the two games report right/wrong rather than a 4-step grade */
   const grade = (id, correct, d) => gradeSrs(id, correct ? 2 : 0, d || dir);
@@ -3801,7 +3981,7 @@ function NotesTab({ state, setState, showToast }) {
                                    onBack={home} />;
   if (view === 'add')    return <NotesAdd onAdd={addNotes} onBack={home} showToast={showToast} />;
   if (view === 'manage') return <NotesManage notes={notes} onDel={delNote} onBack={home} />;
-  if (view === 'result') return <ReviewResult result={result} onHome={home} onRetry={() => start(mode)} />;
+  if (view === 'result') return <ReviewResult result={result} state={state} onHome={home} onRetry={() => start(mode)} />;
 
   if (view === 'review') {
     if (mode === 'match')
@@ -3816,7 +3996,9 @@ function NotesTab({ state, setState, showToast }) {
         pool={visible}
         furigana={state.furigana !== false}
         forceMode={mode === 'auto' ? null : mode}
-        onGrade={gradeSrs} onDone={finish} onExit={home} />
+        game={state.game}
+        onGrade={gradeSrs} onExit={home}
+        onDone={(s, start) => finish({ ...s, session: true, start })} />
     );
   }
 
@@ -3980,7 +4162,317 @@ const GRADES = [
   { g:3, label:'쉬움',   cls:'g-easy'  },
 ];
 
-function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDone, onExit }) {
+/* ── Game layer: XP, levels, goals, badges ─────────────────────────────── */
+const MASCOT = '🐰';
+const GOAL_OPTS = [50, 100, 200, 300];
+const LEVEL_TITLES = ['새싹','초보 여행자','동네 단골','수다쟁이','탐험가','베테랑','달인','고수','도사','전설'];
+const GAME_DEFAULT = { xp:0, cards:0, best:0, perfects:0, goalDays:0, goal:100, sound:true, hist:{}, ach:{} };
+
+function getGame(state) { return { ...GAME_DEFAULT, ...((state && state.game) || {}) }; }
+/* level L begins at 100*(L-1)^2 XP: 100, 400, 900, 1600 ...  A 20-card lesson
+   is roughly 150 XP, so level 5 takes about two weeks of daily lessons. */
+function levelStart(L) { return 100 * (L - 1) * (L - 1); }
+function levelOf(xp) { return Math.floor(Math.sqrt((xp || 0) / 100)) + 1; }
+function levelTitle(L) { return LEVEL_TITLES[Math.min(LEVEL_TITLES.length - 1, L - 1)]; }
+
+/* A streak only counts if you studied today or yesterday; the stored number
+   alone would keep showing a streak that has already broken. */
+function streakNow(state) {
+  if (!state || !state.lastStudy) return 0;
+  return daysBetween(state.lastStudy, todayStr()) <= 1 ? (state.streak || 0) : 0;
+}
+function touchStudyDay(state) {
+  const today = todayStr(), last = state.lastStudy;
+  if (last === today) return state;
+  const streak = last && daysBetween(last, today) === 1 ? (state.streak || 0) + 1 : 1;
+  return { ...state, streak, lastStudy: today };
+}
+function dayXp(state) { return ((getGame(state).hist[todayStr()]) || {}).xp || 0; }
+
+/* XP for one answer. The combo bonus only starts at 3 in a row. */
+function xpFor(grade, combo) {
+  const base = [0, 5, 8, 10][grade] || 0;
+  if (grade < 2) return base;
+  return base + (combo >= 10 ? 4 : combo >= 5 ? 2 : combo >= 3 ? 1 : 0);
+}
+
+const ACHIEVEMENTS = [
+  { id:'first',    icon:'🌱', name:'첫 걸음',       desc:'첫 카드를 공부했어요',            test: s => getGame(s).cards >= 1 },
+  { id:'cards100', icon:'📚', name:'100장',         desc:'카드 100장을 공부했어요',         test: s => getGame(s).cards >= 100 },
+  { id:'cards500', icon:'📖', name:'500장',         desc:'카드 500장을 공부했어요',         test: s => getGame(s).cards >= 500 },
+  { id:'cards1k',  icon:'🏫', name:'1,000장',       desc:'카드 1,000장을 공부했어요',       test: s => getGame(s).cards >= 1000 },
+  { id:'streak3',  icon:'🔥', name:'3일 연속',      desc:'3일 연속으로 공부했어요',         test: s => streakNow(s) >= 3 },
+  { id:'streak7',  icon:'🔥', name:'일주일 연속',   desc:'7일 연속으로 공부했어요',         test: s => streakNow(s) >= 7 },
+  { id:'streak30', icon:'🌋', name:'한 달 연속',    desc:'30일 연속으로 공부했어요',        test: s => streakNow(s) >= 30 },
+  { id:'goal1',    icon:'🎯', name:'목표 달성',     desc:'하루 목표를 처음 채웠어요',       test: s => getGame(s).goalDays >= 1 },
+  { id:'goal7',    icon:'🏅', name:'목표 7번',      desc:'하루 목표를 7번 채웠어요',        test: s => getGame(s).goalDays >= 7 },
+  { id:'perfect',  icon:'💯', name:'완벽한 레슨',   desc:'10장 이상을 한 번도 안 틀렸어요', test: s => getGame(s).perfects >= 1 },
+  { id:'combo10',  icon:'⚡', name:'10연속 정답',   desc:'연달아 10번 맞혔어요',            test: s => getGame(s).best >= 10 },
+  { id:'combo25',  icon:'🚀', name:'25연속 정답',   desc:'연달아 25번 맞혔어요',            test: s => getGame(s).best >= 25 },
+  { id:'lv5',      icon:'⭐', name:'레벨 5',        desc:'레벨 5에 도달했어요',             test: s => levelOf(getGame(s).xp) >= 5 },
+  { id:'lv10',     icon:'🌟', name:'레벨 10',       desc:'레벨 10에 도달했어요',            test: s => levelOf(getGame(s).xp) >= 10 },
+  { id:'hira',     icon:'あ', name:'히라가나 마스터', desc:'히라가나 기본 46자를 모두 외웠어요', test: s => HIRAGANA.filter(h => h.char).every(h => (s.hiragana || []).includes(h.char)) },
+  { id:'kata',     icon:'ア', name:'가타카나 마스터', desc:'가타카나 기본 46자를 모두 외웠어요', test: s => KATAKANA.filter(h => h.char).every(h => (s.katakana || []).includes(h.char)) },
+];
+
+/* Adds XP to the state and reports what it unlocked. The caller has already
+   brought the streak up to date (touchStudyDay), because that is an input. */
+function applyGame(state, a) {
+  const g0 = getGame(state);
+  const today = todayStr();
+  const hist = { ...g0.hist };
+  const day = { xp:0, cards:0, ...(hist[today] || {}) };
+  const before = day.xp;
+  day.xp += a.xp || 0;
+  day.cards += 1;
+  hist[today] = day;
+  const keys = Object.keys(hist).sort();
+  if (keys.length > 120) keys.slice(0, keys.length - 120).forEach(k => { delete hist[k]; });
+
+  const g = { ...g0, xp: g0.xp + (a.xp || 0), cards: g0.cards + 1, hist, best: Math.max(g0.best, a.best || 0) };
+  const goalHit = before < g.goal && day.xp >= g.goal;
+  if (goalHit) g.goalDays = (g0.goalDays || 0) + 1;
+  if (a.final && a.final.perfect && a.final.total >= 10) g.perfects = (g0.perfects || 0) + 1;
+
+  const next = { ...state, game: g };
+  const ach = { ...g.ach }, newAch = [];
+  ACHIEVEMENTS.forEach(A => { if (!ach[A.id] && A.test(next)) { ach[A.id] = today; newAch.push(A.id); } });
+  next.game = { ...g, ach };
+  const lv = levelOf(g.xp);
+  return { next, events: { levelUp: lv > levelOf(g0.xp) ? lv : 0, goalHit, newAch } };
+}
+
+function announce(ev, toast) {
+  if (!ev || !toast) return;
+  if (ev.levelUp)        { sfx('level'); toast(`🎉 레벨 ${ev.levelUp} 달성!`); }
+  else if (ev.goalHit)   { sfx('goal');  toast('🎯 오늘 목표 달성!'); }
+  else if (ev.newAch && ev.newAch.length) {
+    const a = ACHIEVEMENTS.find(x => x.id === ev.newAch[0]);
+    if (a) { sfx('goal'); toast(`${a.icon} 업적: ${a.name}`); }
+  }
+}
+
+/* ── Sound (synthesised, so there is nothing to download) ──────────────── */
+let _audio = null;
+function audioCtx() {
+  try {
+    if (!_audio) { const C = window.AudioContext || window.webkitAudioContext; if (C) _audio = new C(); }
+    if (_audio && _audio.state === 'suspended') _audio.resume();
+    return _audio;
+  } catch (e) { return null; }
+}
+const SFX = {
+  ok:    [[659,0,.12],[988,.08,.22]],
+  ng:    [[220,0,.16,'triangle',.2],[165,.1,.28,'triangle',.2]],
+  tap:   [[520,0,.05,'sine',.08]],
+  done:  [[523,0,.14],[659,.12,.14],[784,.24,.14],[1047,.36,.34]],
+  goal:  [[784,0,.14],[988,.12,.14],[1175,.24,.36]],
+  level: [[392,0,.12],[523,.1,.12],[659,.2,.12],[784,.3,.12],[1047,.4,.5]],
+};
+function sfx(name) {
+  try {
+    if (window.__sfxOff) return;
+    const seq = SFX[name], a = audioCtx();
+    if (!seq || !a) return;
+    const t = a.currentTime;
+    seq.forEach(([f, at, dur, type, vol]) => {
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type || 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t + at);
+      g.gain.exponentialRampToValueAtTime(vol || 0.16, t + at + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur);
+      o.connect(g); g.connect(a.destination);
+      o.start(t + at); o.stop(t + at + dur + 0.05);
+    });
+  } catch (e) { /* no audio — the app just stays quiet */ }
+}
+function vibe(p) { try { if (!window.__sfxOff && navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+
+/* ── Small visual pieces ───────────────────────────────────────────────── */
+const CONFETTI_COLORS = ['#bf3a57', '#e8a317', '#2e7d4f', '#7a5cc0', '#ee6a2b', '#3b9bd6'];
+function Confetti() {
+  const pieces = useMemo(() => Array.from({ length: 44 }, (_, k) => ({
+    k, left: Math.random() * 100, delay: Math.random() * 0.5, dur: 1.9 + Math.random() * 1.6,
+    drift: (Math.random() - 0.5) * 160, spin: 360 + Math.random() * 540,
+    color: CONFETTI_COLORS[k % CONFETTI_COLORS.length], w: 7 + Math.random() * 6,
+  })), []);
+  return (
+    <div className="confetti" aria-hidden="true">
+      {pieces.map(p => (
+        <i key={p.k} style={{
+          left: `${p.left}%`, width: p.w, height: p.w * 1.5, background: p.color,
+          animationDelay: `${p.delay}s`, animationDuration: `${p.dur}s`,
+          '--dx': `${p.drift}px`, '--rot': `${p.spin}deg`,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function GoalRing({ pct, size = 64, children }) {
+  const r = (size - 10) / 2, c = 2 * Math.PI * r, p = Math.max(0, Math.min(1, pct));
+  return (
+    <div className="ring" style={{ width:size, height:size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={size/2} cy={size/2} r={r} className="ring-bg" />
+        <circle cx={size/2} cy={size/2} r={r} className={`ring-fg${p >= 1 ? ' full' : ''}`}
+          strokeDasharray={c} strokeDashoffset={c * (1 - p)}
+          transform={`rotate(-90 ${size/2} ${size/2})`} />
+      </svg>
+      <div className="ring-in">{children}</div>
+    </div>
+  );
+}
+
+function weekDays() {
+  return Array.from({ length: 7 }, (_, k) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - k));
+    return { key: todayStr(d), dow: ['일','월','화','수','목','금','토'][d.getDay()], today: k === 6 };
+  });
+}
+
+function mascotLine(state) {
+  const g = getGame(state), d = dayXp(state), s = streakNow(state);
+  if (d >= g.goal) return '오늘 목표 달성! 대단해요 🎉';
+  if (d > 0)       return `${g.goal - d} XP만 더 하면 오늘 목표예요!`;
+  if (s > 0)       return `오늘 안 하면 ${s}일 연속이 끊겨요!`;
+  return '오늘부터 한 걸음씩 시작해 볼까요?';
+}
+
+/* Home dashboard: streak, level, today's goal and the week */
+function GameStrip({ state }) {
+  const g = getGame(state), xp = g.xp, lv = levelOf(xp);
+  const a = levelStart(lv), b = levelStart(lv + 1);
+  const d = dayXp(state), s = streakNow(state);
+  const week = weekDays();
+  return (
+    <div className="card game-strip">
+      <div className="gs-row">
+        <div className="gs-streak">
+          <span className={`gs-flame${s > 0 ? ' lit' : ''}`}>🔥</span>
+          <b>{s}</b><small>일 연속</small>
+        </div>
+        <div className="gs-level">
+          <div className="gs-lv"><b>Lv {lv}</b> <span>{levelTitle(lv)}</span></div>
+          <div className="prog-track"><div className="prog-fill gold" style={{ width:`${(xp - a) / (b - a) * 100}%` }} /></div>
+          <small>{xp - a} / {b - a} XP</small>
+        </div>
+        <GoalRing pct={g.goal ? d / g.goal : 0}>
+          <span className="ring-num">{d >= g.goal ? '✓' : d}</span>
+          <span className="ring-sub">/{g.goal}</span>
+        </GoalRing>
+      </div>
+
+      <div className="week">
+        {week.map(w => {
+          const x = (g.hist[w.key] || {}).xp || 0;
+          const cls = x >= g.goal ? ' goal' : x > 0 ? ' done' : '';
+          return (
+            <div key={w.key} className={`wk${cls}${w.today ? ' today' : ''}`}>
+              <span className="wk-dot">{x >= g.goal ? '🔥' : x > 0 ? '✓' : ''}</span>
+              <span className="wk-dow">{w.dow}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mascot-row">
+        <span className="mascot">{MASCOT}</span>
+        <div className="bubble">{mascotLine(state)}</div>
+      </div>
+    </div>
+  );
+}
+
+function AchievementsCard({ state }) {
+  const g = getGame(state);
+  const got = ACHIEVEMENTS.filter(a => g.ach[a.id]).length;
+  return (
+    <div className="card">
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:12}}>
+        <span className="section-title" style={{marginBottom:0}}>업적</span>
+        <span className="fc-count">{got} / {ACHIEVEMENTS.length}</span>
+      </div>
+      <div className="badges">
+        {ACHIEVEMENTS.map(a => {
+          const on = !!g.ach[a.id];
+          return (
+            <div key={a.id} className={`badge-cell${on ? ' on' : ''}`} title={a.desc}>
+              <span className="badge-ic">{a.icon}</span>
+              <span className="badge-nm">{a.name}</span>
+              <span className="badge-ds">{on ? '달성!' : a.desc}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* Shown when a lesson ends */
+function SessionSummary({ stats, start, state, onClose, onRetry }) {
+  const g = getGame(state), sg = start || g;
+  const lvA = levelOf(sg.xp || 0), lvB = levelOf(g.xp);
+  const startDay = ((sg.hist || {})[todayStr()] || {}).xp || 0;
+  const dNow = dayXp(state);
+  const goalNow = dNow >= g.goal && startDay < g.goal;
+  const newAch = ACHIEVEMENTS.filter(a => g.ach[a.id] && !(sg.ach || {})[a.id]);
+  const acc = stats.total ? Math.round(stats.correct / stats.total * 100) : 0;
+  const up = lvB > lvA;
+  const line = acc === 100 ? '완벽해요!' : acc >= 80 ? '아주 잘했어요!' : acc >= 50 ? '좋아요, 조금만 더!' : '틀린 만큼 기억에 남아요';
+  const mm = Math.floor((stats.secs || 0) / 60), ss = String((stats.secs || 0) % 60).padStart(2, '0');
+  const a0 = levelStart(lvB), b0 = levelStart(lvB + 1);
+
+  useEffect(() => { sfx(up ? 'level' : goalNow ? 'goal' : 'done'); }, []);
+
+  return (
+    <div className="summary">
+      {(acc >= 80 || up || goalNow) && <Confetti />}
+      <div className="sum-mascot">{MASCOT}</div>
+      <div className="sum-title">레슨 완료!</div>
+      <div className="sum-line">{line}</div>
+
+      <div className="sum-tiles">
+        <div className="sum-tile gold"><span>총 XP</span><b>+{stats.xp}</b></div>
+        <div className="sum-tile green"><span>정확도</span><b>{acc}%</b></div>
+        <div className="sum-tile blue"><span>시간</span><b>{mm}:{ss}</b></div>
+      </div>
+
+      {up && (
+        <div className="sum-banner">🎉 레벨 업! Lv {lvA} → <b>Lv {lvB}</b> · {levelTitle(lvB)}</div>
+      )}
+      <div className="sum-card">
+        <div className="gs-lv"><b>Lv {lvB}</b> <span>{levelTitle(lvB)}</span></div>
+        <div className="prog-track"><div className="prog-fill gold" style={{ width:`${(g.xp - a0) / (b0 - a0) * 100}%` }} /></div>
+        <small>{g.xp - a0} / {b0 - a0} XP</small>
+      </div>
+
+      <div className="sum-card sum-goal">
+        <GoalRing pct={g.goal ? dNow / g.goal : 0} size={56}>
+          <span className="ring-num">{dNow >= g.goal ? '✓' : Math.round(dNow / g.goal * 100) + '%'}</span>
+        </GoalRing>
+        <div>
+          <div className="sum-goal-t">{goalNow ? '🎯 오늘 목표 달성!' : dNow >= g.goal ? '오늘 목표를 이미 채웠어요' : '오늘의 목표'}</div>
+          <div className="sum-goal-s">{dNow} / {g.goal} XP · 🔥 {streakNow(state)}일 연속</div>
+        </div>
+      </div>
+
+      {stats.best >= 3 && <div className="sum-chip">⚡ 최고 {stats.best}연속 정답</div>}
+      {newAch.map(a => (
+        <div key={a.id} className="sum-ach"><span>{a.icon}</span><div><b>{a.name}</b><small>{a.desc}</small></div></div>
+      ))}
+
+      <div className="sum-actions">
+        {onRetry && <button className="btn btn-ghost" style={{flex:1, padding:14}} onClick={onRetry}>한 번 더</button>}
+        <button className="btn btn-primary" style={{flex:onRetry ? 1.6 : 1}} onClick={onClose}>계속하기</button>
+      </div>
+    </div>
+  );
+}
+
+const PRAISE = ['정답!', '좋아요!', '잘했어요!', '완벽해요!', '굿!', '멋져요!'];
+
+function StudySession({ queue: initial, pool, furigana, forceMode, game, onGrade, onDone, onExit }) {
   const [queue, setQueue] = useState(initial);
   const [i, setI] = useState(0);
   const [revealed, setRevealed] = useState(false);  /* back is showing now */
@@ -3988,8 +4480,20 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
   const [sel, setSel] = useState(null);
   const [val, setVal] = useState('');
   const [judged, setJudged] = useState(null);
-  const [stats, setStats] = useState({ done:0, again:0 });
+  const [fb, setFb] = useState(null);               /* feedback sheet after a choice */
+  const [prog, setProg] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [pop, setPop] = useState(null);
+  const total0 = useRef(initial.length).current;
+  const st = useRef({ done:0, again:0, correct:0, xp:0, combo:0, best:0, t0:Date.now() });
+  const startGame = useRef(getGame({ game })).current;   /* for the summary's before/after */
   const timer = useTimeoutRef();
+
+  /* hide the tab bar and header while a lesson is running */
+  useEffect(() => {
+    document.body.classList.add('immersive');
+    return () => document.body.classList.remove('immersive');
+  }, []);
 
   const e = queue[i];
   const n = e && e.n, dir = e && e.dir;
@@ -4008,6 +4512,8 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
     return shuffle([n, ...shuffle(others).slice(0, 3)]);
   }, [e && n.id, dir, mode]);
 
+  const praise = useMemo(() => PRAISE[Math.floor(Math.random() * PRAISE.length)], [i]);
+
   /* a listening card plays itself as soon as it comes up */
   useEffect(() => {
     if (e && dir === 'listen') speakJa(speakTextOf(n));
@@ -4015,28 +4521,64 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
 
   if (!e) return null;
 
-  const advance = (grade) => {
-    onGrade(n.id, grade, dir);
-    const next = { done: stats.done + 1, again: stats.again + (grade === 0 ? 1 : 0) };
-    setStats(next);
+  /* record the answer: scheduling, XP, combo, sound */
+  const commit = (grade) => {
+    const s = st.current, ok = grade >= 1;
+    s.done += 1;
+    if (ok) s.correct += 1; else s.again += 1;
+    s.combo = ok ? s.combo + 1 : 0;
+    s.best = Math.max(s.best, s.combo);
+    const xp = xpFor(grade, s.combo);
+    s.xp += xp;
+    /* a wrong card is asked again, so only a right one can be the last */
+    const last = grade !== 0 && i + 1 >= queue.length;
+    onGrade(n.id, grade, dir, {
+      xp, combo: s.combo, best: s.best,
+      final: last ? { total: s.done, correct: s.correct, perfect: s.again === 0 } : null,
+    });
+    setCombo(s.combo);
+    setProg(Math.min(1, s.correct / total0));
+    if (xp) setPop({ id: Date.now(), xp });
+    sfx(ok ? 'ok' : 'ng');
+    vibe(ok ? 15 : [30, 40, 30]);
+    return xp;
+  };
+
+  /* move on to the next card, or finish */
+  const goNext = (grade) => {
+    clearTimeout(timer.current);
+    const s = st.current;
     /* a card you got wrong comes back later in the same session */
     const q = grade === 0 ? [...queue, e] : queue;
-    if (i + 1 >= q.length) { onDone(next); return; }
+    if (i + 1 >= q.length) {
+      onDone({ ...s, total: s.done, secs: Math.round((Date.now() - s.t0) / 1000) }, startGame);
+      return;
+    }
     setQueue(q); setI(i + 1);
-    setRevealed(false); setSeen(false); setSel(null); setVal(''); setJudged(null);
+    setRevealed(false); setSeen(false); setSel(null); setVal(''); setJudged(null); setFb(null);
   };
+  const advance = (grade) => { commit(grade); goNext(grade); };
 
   const pickChoice = (o) => {
     if (sel) return;
     setSel(o);
-    const ok = o.id === n.id;
-    timer.current = setTimeout(() => advance(ok ? 2 : 0), ok ? 450 : 1300);
+    const ok = o.id === n.id, grade = ok ? 2 : 0;
+    const xp = commit(grade);
+    setFb({ ok, grade, xp });
+    if (ok) timer.current = setTimeout(() => goNext(grade), 1100);
   };
 
   const submitTyped = (ev) => {
     ev.preventDefault();
     if (judged !== null || !val.trim()) return;
-    setJudged(answerMatches(val, n.back));
+    const ok = answerMatches(val, n.back);
+    setJudged(ok);
+    sfx(ok ? 'ok' : 'ng');
+  };
+
+  const quit = () => {
+    if (st.current.done > 0 && !window.confirm('지금 나가도 푼 카드는 저장돼요. 나갈까요?')) return;
+    onExit();
   };
 
   /* 뜻 cards may show the reading under the question; the other two never do
@@ -4050,13 +4592,18 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
   const hideJaOnQ = isListen || dir === 'recall';
 
   const header = (
-    <div className="rv-bar">
-      <button className="btn btn-ghost btn-sm" onClick={onExit}>← 그만</button>
-      <span className="fc-count">
+    <>
+      <div className="sx-top">
+        <button className="sx-x" onClick={quit} aria-label="나가기">✕</button>
+        <div className="sx-bar"><div className="sx-fill" style={{ width:`${prog * 100}%` }} /></div>
+        <span className={`sx-combo${combo >= 3 ? ' hot' : ''}`}>🔥 {combo}</span>
+      </div>
+      <div className="sx-meta">
         <span className={`dir-chip dir-${dir}`}>{DIRS[dir].short}</span>
         {NOTE_TYPES[n.type].label} · 남은 {queue.length - i}장
-      </span>
-    </div>
+      </div>
+      {pop && <div key={pop.id} className="xp-pop">+{pop.xp} XP</div>}
+    </>
   );
 
   /* ── new card: show it, then rate it ── */
@@ -4065,7 +4612,7 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
       <div className="content">
         {header}
         <div className="new-badge">처음 보는 카드</div>
-        <div className="fc-wrap" onClick={() => { setRevealed(r => !r); setSeen(true); }}>
+        <div className="fc-wrap" onClick={() => { setRevealed(r => !r); setSeen(true); sfx('tap'); }}>
           <div className={`fc${revealed ? ' flipped' : ''}`} key={n.id + dir}>
             <div className="fc-face fc-front">
               <div className="fc-hint">{seen ? '탭하면 다시 뒤집혀요' : DIRS[dir].ask}</div>
@@ -4094,7 +4641,7 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
             /* the speaker covers the middle of the card, so revealing needs
                a button of its own rather than a tap on the card */
             <button className="btn btn-primary"
-              onClick={() => { setRevealed(true); setSeen(true); }}>정답 보기</button>
+              onClick={() => { setRevealed(true); setSeen(true); sfx('tap'); }}>정답 보기</button>
           ) : (
             <div className="tip-card" style={{textAlign:'center'}}>
               <div className="tip-text">답을 떠올려 본 다음 카드를 탭하세요.</div>
@@ -4133,12 +4680,19 @@ function StudySession({ queue: initial, pool, furigana, forceMode, onGrade, onDo
             );
           })}
         </div>
-        {sel && (
-          <div className="tip-card" style={{marginTop:10, textAlign:'center'}}>
-            <div className="tip-text">
-              {n.front}{n.reading ? ` · ${n.reading}` : ''} — {n.back}
+
+        {fb && (
+          <div className={`fb-sheet ${fb.ok ? 'ok' : 'ng'}`}>
+            <div className="fb-title">
+              {fb.ok ? (combo >= 5 ? `🔥 ${combo}연속!` : praise) : '아쉬워요'}
+              {fb.xp > 0 && <span className="fb-xp">+{fb.xp} XP</span>}
             </div>
-            <SpeakBtn note={n} />
+            {!fb.ok && <div className="fb-ans"><small>정답</small>{answer}</div>}
+            <div className="fb-sub">
+              {n.front}{n.reading ? ` · ${n.reading}` : ''} — {n.back}
+              <SpeakBtn note={n} />
+            </div>
+            <button className="fb-btn" onClick={() => goNext(fb.grade)}>계속하기</button>
           </div>
         )}
       </div>
@@ -4228,6 +4782,21 @@ function SettingsCard({ state, setState, showToast }) {
 
   return (
     <div className="card">
+      <div className="section-title" style={{marginBottom:12}}>게임 설정</div>
+      <div className="field-label">하루 목표 XP</div>
+      <div className="tabs" style={{marginBottom:12}}>
+        {GOAL_OPTS.map(v => (
+          <button key={v} className={`tab${getGame(state).goal === v ? ' active' : ''}`}
+            onClick={() => setState({ ...state, game: { ...getGame(state), goal: v } })}>{v} XP</button>
+        ))}
+      </div>
+      <div className="toggle-wrap" style={{marginBottom:18}}>
+        <button className={`toggle-btn${getGame(state).sound !== false ? ' active' : ''}`}
+          onClick={() => setState({ ...state, game: { ...getGame(state), sound: true } })}>🔊 효과음 켜기</button>
+        <button className={`toggle-btn${getGame(state).sound === false ? ' active' : ''}`}
+          onClick={() => setState({ ...state, game: { ...getGame(state), sound: false } })}>🔇 끄기</button>
+      </div>
+
       <div className="section-title" style={{marginBottom:12}}>이름 · 백업</div>
 
       {stale && (
@@ -4281,6 +4850,7 @@ const STUDY_IDS = new Set(STUDY_DECKS.map(d => d.id));
 function isMine(n) { return !STUDY_IDS.has(n.deck); }
 
 function TodayTab({ state, setState, showToast, studying, setStudying }) {
+  const [summary, setSummary] = useState(null);
   const today = todayStr();
   const pins = state.pins && state.pins.date === today ? state.pins.ids : [];
   /* a card the user looked up is shown even if the practical filter hides it */
@@ -4301,7 +4871,7 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
   const { review, fresh, freshTotal, total } = dueSplit(scoped, newLeft, dirs, pins);
   const waiting = review.length + fresh.length;
 
-  const grade = (id, g, dir) => {
+  const grade = (id, g, dir, extra) => {
     const target = (state.notes || []).find(x => x.id === id);
     const wasNew = !sget(target, dir, 'reps');
     const d = state.daily && state.daily.date === today
@@ -4313,11 +4883,14 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
     const last = state.lastStudy;
     if (last !== today) streak = last && daysBetween(last, today) === 1 ? streak + 1 : 1;
 
-    setState({
+    const moved = {
       ...state,
       notes: state.notes.map(x => x.id === id ? schedule(x, g, dir) : x),
       daily: d, streak, lastStudy: today,
-    });
+    };
+    const r = applyGame(moved, extra || { xp: xpFor(g, 0) });
+    setState(r.next);
+    announce(r.events, showToast);
   };
 
   if (studying) {
@@ -4327,10 +4900,20 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
         queue={studying.queue}
         pool={scoped}
         furigana={furigana}
+        game={state.game}
         onGrade={grade}
         onExit={() => setStudying(null)}
-        onDone={(s) => { setStudying(null); showToast(`${s.done}장 완료 ✓`); }}
+        onDone={(s, start) => { setStudying(null); setSummary({ stats: s, start }); }}
       />
+    );
+  }
+
+  if (summary) {
+    return (
+      <div className="content">
+        <SessionSummary stats={summary.stats} start={summary.start} state={state}
+          onClose={() => setSummary(null)} />
+      </div>
     );
   }
 
@@ -4377,6 +4960,8 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
 
   return (
     <div className="content">
+      <GameStrip state={state} />
+
       <div className="today-hero">
         <div className="hero-eyebrow">오늘 복습</div>
         <div className="hero-num">{waiting}</div>
@@ -4498,6 +5083,8 @@ function TodayTab({ state, setState, showToast, studying, setStudying }) {
           })}
         </div>
       </div>
+
+      <AchievementsCard state={state} />
 
       <SettingsCard state={state} setState={setState} showToast={showToast} />
 
@@ -4868,6 +5455,7 @@ function App() {
   }, []);
 
   const [saveFailed, setSaveFailed] = useState(false);
+  useEffect(() => { window.__sfxOff = !!(appState && getGame(appState).sound === false); }, [appState]);
   const updateState = useCallback(next => {
     setAppState(next);
     if (!saveState(next)) setSaveFailed(true);
@@ -4919,11 +5507,9 @@ function App() {
           <div className="header-title">{ht.main} <span>{ht.accent}</span></div>
           <div className="header-sub">{appState.p1} · {appState.p2}</div>
         </div>
-        <div className="header-mark" style={{color:'var(--rose)'}}>
-          <svg width="18" height="18" viewBox="0 0 96 96" fill="none">
-            <circle cx="36" cy="48" r="28" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
-            <circle cx="60" cy="48" r="28" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
-          </svg>
+        <div className="hchips">
+          <span className={`hchip flame${streakNow(appState) > 0 ? ' lit' : ''}`}>🔥 {streakNow(appState)}</span>
+          <span className="hchip gold">⭐ {getGame(appState).xp}</span>
         </div>
       </header>
 
